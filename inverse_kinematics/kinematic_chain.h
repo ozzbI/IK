@@ -30,6 +30,9 @@ private:
     bool rot_max_Force;
     int max_Force_id;
 
+    bool TARGET_ACTIVATED;
+    bool ELASTIC_GLOBAL;
+
 public:
 
     vector<ball_joint,Eigen::aligned_allocator<ball_joint> > ball_joints;
@@ -83,6 +86,12 @@ public:
     void set_aa_limiter(int id,double ang_ax,Vector3d a);
     void del_aa_limiter(int id);
     void set_lim_angles(int id,double a1,double a2,double a3,double a4);
+
+    void set_TARGET_ACTIVATED(bool state);
+    void set_ELASTIC_GLOBAL(bool state);
+
+    void set_joint_elastic(int id,bool state,double K,double K2,double angle);
+    void set_slider_elastic(int id,bool state,double K,double K2,double L);
 
     static double len(Vector3d& a)
     {

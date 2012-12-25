@@ -28,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent) :
    //connect(glw,SIGNAL(set_max_links(int ml)),this,SLOT(max_links(int ml)));
     ui->link->setMaximum(glw->KChain.get_size()-1);
 
+    ui->Target_Activated_checkbox->setChecked(true);
+    ui->elastic_joints_checkbox->setChecked(true);
+
     connect(this,SIGNAL(rotate_link(int,double,double,double)),glw,SLOT(rotate_KChain_link(int,double,double,double)));
     connect(this,SIGNAL(set_link_rotation(int,double,double,double)),glw,SLOT(set_KChain_link_angles(int,double,double,double)));
 }
@@ -321,16 +324,29 @@ void MainWindow::on_save_to_file_but_clicked()
         out<<glw->KChain.links[i]->max_length; out<<" ";
         out<<glw->KChain.links[i]->slider_Frict_K; out<<" ";
         out<<glw->KChain.links[i]->subtype; out<<" ";
+
         if(glw->KChain.links[i]->type==1)
         {
             out<<glw->KChain.links[i]->aa_limiter[0].angle(); out<<" ";
-            out<<0;
+            out<<0<<" ";
         }
         else
         {
-            out<<glw->KChain.links[i]->lim_ang[0]; out<<" ";
-            out<<glw->KChain.links[i]->lim_ang[1];
+            out<<glw->KChain.links[i]->lim_ang[0]; out<< " ";
+            out<<glw->KChain.links[i]->lim_ang[1]; out<< " ";
         }
+
+        /* параметры эластичности*/
+
+        out << glw->KChain.links[i]->joint_elastic << " " ;
+        out << glw->KChain.links[i]->joint_elastic_K << " " ;
+        out << glw->KChain.links[i]->joint_elastic_K_2 << " " ;
+        out << glw->KChain.links[i]->joint_elastic_angle << " " ;
+
+        out << glw->KChain.links[i]->slider_elastic << " " ;
+        out << glw->KChain.links[i]->slider_elastic_K << " " ;
+        out << glw->KChain.links[i]->slider_elastic_K_2 << " " ;
+        out << glw->KChain.links[i]->slider_elastic_L << " " ;
 
         out<<"\n";
     }
@@ -345,6 +361,18 @@ void MainWindow::on_opne_file_but_clicked()
     QString fname,buf;
     fname=QFileDialog::getOpenFileName(this, tr("OpenFile"),"C:/Qt_projects/inverse_kinematics/chain_files",tr("chain1(*.kChain)"));
     QFile file(fname);
+
+    // параметры упругости сустава
+    int joint_elastic;
+    double joint_elastic_K;
+    double joint_elastic_K_2;
+    double joint_elastic_angle;
+    // параметры упроугости слайдера
+    int slider_elastic;
+    double slider_elastic_K;
+    double slider_elastic_K_2;
+    double slider_elastic_L;
+
     file.open(QIODevice::ReadOnly);
     QTextStream in(&file);
     if(!fname.isEmpty())
@@ -418,6 +446,45 @@ void MainWindow::on_opne_file_but_clicked()
         if(buf=="END") break;
         ang2=buf.toDouble();
 
+        // параметры упругости сустава
+
+        in>>buf;
+        if(buf=="END") break;
+        joint_elastic=buf.toInt();
+
+        in>>buf;
+        if(buf=="END") break;
+        joint_elastic_K=buf.toDouble();
+
+        in>>buf;
+        if(buf=="END") break;
+        joint_elastic_K_2=buf.toDouble();
+
+        in>>buf;
+        if(buf=="END") break;
+        joint_elastic_angle=buf.toDouble();
+
+        // параметры упроугости слайдера
+
+        in>>buf;
+        if(buf=="END") break;
+        slider_elastic=buf.toInt();
+
+        in>>buf;
+        if(buf=="END") break;
+        slider_elastic_K=buf.toDouble();
+
+        in>>buf;
+        if(buf=="END") break;
+        slider_elastic_K_2=buf.toDouble();
+
+        in>>buf;
+        if(buf=="END") break;
+        slider_elastic_L=buf.toDouble();
+
+
+
+
         if(c==0)c++,f=true;
 
         if(f) glw->KChain.add_link(type,Vector3d(0,0,0),len,c-1,yaw,pitch,roll);
@@ -434,6 +501,10 @@ void MainWindow::on_opne_file_but_clicked()
             glw->KChain.set_aa_limiter(c,ang1,Vector3d(0,0,-1));
         }
         else glw->KChain.set_lim_angles(c,ang1,ang2,0,0);
+
+        // параметры упроугости
+        glw->KChain.set_joint_elastic(c,(bool)joint_elastic,joint_elastic_K,joint_elastic_K_2,joint_elastic_angle);
+        glw->KChain.set_slider_elastic(c,(bool)slider_elastic,slider_elastic_K,slider_elastic_K_2,slider_elastic_L);
 
         c++;
     }
@@ -454,4 +525,26 @@ void MainWindow::set_max_link()
 void MainWindow::on_vel_slider_actionTriggered(int action)
 {
 
+}
+
+void MainWindow::on_Target_Activated_checkbox_clicked(bool checked)
+{
+    /*nothing*/
+}
+
+void MainWindow::on_elastic_joints_checkbox_clicked(bool checked)
+{
+    /*nothing*/
+}
+
+void MainWindow::on_Target_Activated_checkbox_stateChanged(int arg1)
+{
+    if(arg1==2)glw->KChain.set_TARGET_ACTIVATED(true);
+    else if(arg1==0) glw->KChain.set_TARGET_ACTIVATED(false);
+}
+
+void MainWindow::on_elastic_joints_checkbox_stateChanged(int arg1)
+{
+    if(arg1==2)glw->KChain.set_ELASTIC_GLOBAL(true);
+    else if(arg1==0) glw->KChain.set_ELASTIC_GLOBAL(false);
 }

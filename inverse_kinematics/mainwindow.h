@@ -65,6 +65,10 @@ private slots:
     void on_opne_file_but_clicked();
     void set_max_link();
     void on_vel_slider_actionTriggered(int action);
+    void on_Target_Activated_checkbox_clicked(bool checked);
+    void on_elastic_joints_checkbox_clicked(bool checked);
+    void on_Target_Activated_checkbox_stateChanged(int arg1);
+    void on_elastic_joints_checkbox_stateChanged(int arg1);
 };
 
 #endif // MAINWINDOW_H

@@ -19,6 +19,9 @@ kinematic_chain::kinematic_chain()
     Force_normalizing=false;
     rot_max_Force=false;
     max_Force_id=0;
+
+    TARGET_ACTIVATED=1;
+    ELASTIC_GLOBAL=1;
 }
 
 void kinematic_chain::draw_chain()
@@ -500,7 +503,12 @@ void kinematic_chain::Forces_calculation(double velocity)
         cur_joint_id=effectors[e].id;
         child_id=effectors[e].id;
         // не обрабатывается случай со смещенной костью
-        Force=effectors[e].target-(links[cur_joint_id]->global_position+links[cur_joint_id]->dir*links[cur_joint_id]->length);    
+
+        if(TARGET_ACTIVATED)
+            Force=effectors[e].target-(links[cur_joint_id]->global_position+links[cur_joint_id]->dir*links[cur_joint_id]->length);
+        else
+            Force=Vector3d(0,0,0) ;
+
         Force_before=Force;
         //нормализация вектора силы ----------------------------------------------------
         if(!Force_normalizing)
@@ -890,4 +898,31 @@ void kinematic_chain::add_link_to_middle(int type,Vector3d in_pos,double in_leng
     refresh_links();
     total_link_recalculation(0);
     effectors[0].id++;
+}
+
+void kinematic_chain::set_TARGET_ACTIVATED(bool state)
+{
+    TARGET_ACTIVATED=state;
+}
+
+void kinematic_chain::set_ELASTIC_GLOBAL(bool state)
+{
+    ELASTIC_GLOBAL=state;
+}
+
+
+void kinematic_chain::set_joint_elastic(int id,bool state,double K,double K2,double angle)
+{
+    links[id]->joint_elastic = state;
+    links[id]->joint_elastic_K = K;
+    links[id]->joint_elastic_K_2 = K2;
+    links[id]->joint_elastic_angle = angle;
+}
+
+void kinematic_chain::set_slider_elastic(int id,bool state,double K,double K2,double L)
+{
+    links[id]->slider_elastic = state;
+    links[id]->slider_elastic_K = K;
+    links[id]->slider_elastic_K_2 = K2;
+    links[id]->slider_elastic_L = L;
 }

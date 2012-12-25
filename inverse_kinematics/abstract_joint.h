@@ -26,6 +26,17 @@ public:
 
     double coord_lim[8];
 
+    // параметры упругости сустава
+    bool joint_elastic;
+    double joint_elastic_K;
+    double joint_elastic_K_2;
+    double joint_elastic_angle;
+    // параметры упроугости слайдера
+    bool slider_elastic;
+    double slider_elastic_K;
+    double slider_elastic_K_2;
+    double slider_elastic_L;
+
     virtual bool rotation_possibility(Quaterniond q,double velocity)=0;
     virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity)=0;
 
@@ -41,13 +52,26 @@ public:
         slider_Force=Vector3d(0,0,0);
 
         //angle test
-        Vector3d a(1,0,0),b(-1,1,0);
+        /*Vector3d a(1,0,0),b(-1,1,0);
         double r;
 
         r=angle(a,b);
         //r=angle_2PI(a,b);
 
-        r=0;
+        r=0;*/
+
+        // параметры упругости сустава
+        joint_elastic = true;
+        joint_elastic_K = 0.3;
+        joint_elastic_K_2 = 0;
+        joint_elastic_angle = 0;
+        // параметры упроугости слайдера
+        slider_elastic = true;
+        slider_elastic_K = 0.3;
+        slider_elastic_K_2 = 0;
+        slider_elastic_L = 0;
+
+
     }
 
     Vector3d projection(const Vector3d& a,  const Vector3d& b)//b на a
