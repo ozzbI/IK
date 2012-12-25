@@ -67,21 +67,64 @@ public:
 
     virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)
     {
-        Vector3d ret_Force,rot_vel,Force_loss,dir_proj,test_axis,slider_Force_local,norm_Force;
+        Vector3d ret_Force, rot_vel, Force_loss, dir_proj,
+                 test_axis, slider_Force_local, norm_Force, elastic_Force;
+
         bool block=false;
 
-        if(subtype==2)
+        elastic_Force = Vector3d(0,0,0);
+
+        if(subtype == 2)
         {
             Vector3d temp;
-            temp=up;
-            up=right;
-            right=temp;
+            temp = up;
+            up = right;
+            right = temp;
+        }
+
+        if(global_elastic && slider_elastic) //обработка сил упругости (копипаста с боллджоинта)
+        {
+            //да это кривой код
+
+            double dir_par_dir_angle=0; //угол между текущим направлением и направлением родителя
+            Vector3d par_dir; //parent bone direction
+            Quaterniond temp(0,0,0,0),rot_qt;
+
+            par_dir=Vector3d(0,0,-1);
+
+            if(id!=0)
+            {
+                temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
+                rot_qt = parent->global_transform * local_transform; //оставить только это в if
+                temp = rot_qt * temp * rot_qt.inverse();
+                par_dir = Vector3d(temp.x(),temp.y(),temp.z());
+            }
+            else
+            {
+                temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
+                rot_qt = local_transform;
+                temp = rot_qt * temp * rot_qt.inverse();
+                par_dir = Vector3d(temp.x(),temp.y(),temp.z());
+            }
+
+            dir_par_dir_angle=angle(dir,par_dir)-joint_elastic_angle;
+
+            if(dir_par_dir_angle>0)
+            {
+                // !!! не учтено K^2
+                elastic_Force = projection(par_dir,dir);
+                elastic_Force.normalize();
+                elastic_Force *= dir_par_dir_angle*joint_elastic_K;
+            }
         }
 
         dir_proj=projection(dir,Force);
         rot_vel=projection(up,Force);
+
         Force_loss=rot_vel*joint_Frict_K;
         rot_vel-=Force_loss;
+
+        rot_vel+=elastic_Force;
 
         //обработка слайдера
         if (telescopic)
@@ -101,18 +144,18 @@ public:
             {
                 Vector3d rand_axis;
                 srand(time(0));
-                rand_axis.x()=rand()%100;
-                rand_axis.y()=rand()%100;
-                rand_axis.z()=rand()%100;
+                rand_axis.x() = rand()%100;
+                rand_axis.y() = rand()%100;
+                rand_axis.z() = rand()%100;
                 rand_axis.normalize();
                 Quaterniond new_Force(AngleAxisd(rand()%10000, right));
 
                 if(rotation_possibility(new_Force,velocity))
                 {
-                    Result_Force.w()=Result_Force.w()+new_Force.w();
-                    Result_Force.x()=Result_Force.x()+new_Force.x();
-                    Result_Force.y()=Result_Force.y()+new_Force.y();
-                    Result_Force.z()=Result_Force.z()+new_Force.z();
+                    Result_Force.w() = Result_Force.w()+new_Force.w();
+                    Result_Force.x() = Result_Force.x()+new_Force.x();
+                    Result_Force.y() = Result_Force.y()+new_Force.y();
+                    Result_Force.z() = Result_Force.z()+new_Force.z();
                 }
                 else block=true;
             }
@@ -121,43 +164,45 @@ public:
             if(subtype==2)
             {
                 Vector3d temp;
-                temp=up;
-                up=right;
-                right=temp;
+                temp = up;
+                up = right;
+                right = temp;
             }
 
-            if(block) return (ret_Force+rot_vel/*-Force_loss*/)*ret_Force_K;
+            if(block) return (ret_Force+rot_vel-elastic_Force/*-Force_loss*/) * ret_Force_K;
             //if(block) return (Force-norm_Force)*ret_Force_K;
             else return ret_Force*ret_Force_K;
         }
 
-        double rot_vel_scalar=K*sqrt(rot_vel(0)*rot_vel(0)+rot_vel(1)*rot_vel(1)+rot_vel(2)*rot_vel(2));
+        double rot_vel_scalar=K*sqrt(rot_vel(0)*rot_vel(0) +
+                                     rot_vel(1)*rot_vel(1) +
+                                     rot_vel(2)*rot_vel(2));
 
-        if(Force.dot(up)<0&&subtype==1) rot_vel_scalar=-rot_vel_scalar;
-        if(Force.dot(up)>0&&subtype==2) rot_vel_scalar=-rot_vel_scalar;
+        if(Force.dot(up)<0&&subtype == 1) rot_vel_scalar = - rot_vel_scalar;
+        if(Force.dot(up)>0&&subtype == 2) rot_vel_scalar = - rot_vel_scalar;
 
         Quaterniond new_Force(AngleAxisd(rot_vel_scalar, right));
 
         if(rotation_possibility(new_Force, velocity))
         {
-            Result_Force.w()=Result_Force.w()+new_Force.w();
-            Result_Force.x()=Result_Force.x()+new_Force.x();
-            Result_Force.y()=Result_Force.y()+new_Force.y();
-            Result_Force.z()=Result_Force.z()+new_Force.z();
+            Result_Force.w() = Result_Force.w()+new_Force.w();
+            Result_Force.x() = Result_Force.x()+new_Force.x();
+            Result_Force.y() = Result_Force.y()+new_Force.y();
+            Result_Force.z() = Result_Force.z()+new_Force.z();
         }
         else block=true;
 
         norm_Force=projection(up,Force);
-        if(subtype==2)
+        if(subtype == 2)
         {
             Vector3d temp;
-            temp=up;
-            up=right;
-            right=temp;
+            temp = up;
+            up = right;
+            right = temp;
         }
-        if(block)return (ret_Force+rot_vel/*-Force_loss*/)*ret_Force_K; //!
+        if(block)return (ret_Force + rot_vel - elastic_Force/*-Force_loss*/) * ret_Force_K; //!
         //if(block)return (Force-norm_Force)*ret_Force_K;
-        else return ret_Force*ret_Force_K;
+        else return ret_Force * ret_Force_K;
         //else return (Force-norm_Force)*ret_Force_K;
     }
 
