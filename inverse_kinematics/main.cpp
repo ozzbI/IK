@@ -27,7 +27,7 @@ public:
 };*/
 
 
-/* Git test 3 dasd*/
+/* Git test 3 */
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
