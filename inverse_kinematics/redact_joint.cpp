@@ -49,6 +49,19 @@ void redact_joint::set_kc(kinematic_chain* nkc,int ni)
         else ui->subt_cbox->setCheckState(Qt::Unchecked);
     }
     else ui->subt_cbox->setEnabled(false);
+
+
+    // параметры упроугости джоинта
+    ui->joint_elastic_checkbox->setChecked(kc->links[i]->joint_elastic);
+    ui->joint_elastic_K->setValue(kc->links[i]->joint_elastic_K);
+    ui->joint_elastic_angle->setValue(kc->links[i]->joint_elastic_angle);
+
+    // параметры упроугости слайдера
+    ui->slider_elastic_checkbox->setChecked(kc->links[i]->slider_elastic);
+    ui->slider_elastic_K->setValue(kc->links[i]->slider_elastic_K);
+    ui->slider_elastic_L->setValue(kc->links[i]->slider_elastic_L);
+    ui->slider_elastic_L->setMaximum(kc->links[i]->max_length - kc->links[i]->min_length);
+
 }
 
 
@@ -100,6 +113,18 @@ void redact_joint::on_Ok_but_clicked()
         kc->links[i]->subtype=1;
         kc->links[i]->global_transform=kc->links[i]->global_transform.Identity();
     }
+
+
+    // параметры упроугости джоинта
+    kc->links[i]->joint_elastic = ui->joint_elastic_checkbox->isChecked();
+    kc->links[i]->joint_elastic_K = ui->joint_elastic_K->value();
+    kc->links[i]->joint_elastic_angle = ui->joint_elastic_angle->value();
+
+    // параметры упроугости слайдера
+    kc->links[i]->slider_elastic = ui->slider_elastic_checkbox->isChecked();
+    kc->links[i]->slider_elastic_K = ui->slider_elastic_K->value();
+    kc->links[i]->slider_elastic_L = ui->slider_elastic_L->value();
+
 
     if(i==0)kc->total_link_recalculation(0);
     else kc->total_link_recalculation(i-1);

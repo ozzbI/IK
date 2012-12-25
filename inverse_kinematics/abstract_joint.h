@@ -38,7 +38,7 @@ public:
     double slider_elastic_L;
 
     virtual bool rotation_possibility(Quaterniond q,double velocity)=0;
-    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity)=0;
+    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)=0;
 
 
     abstract_joint(Vector3d in_pos,double in_lenght,int in_parent_id,double in_yaw,double in_pitch,double in_roll,bool in_root)

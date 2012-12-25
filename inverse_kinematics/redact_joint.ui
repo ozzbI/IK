@@ -202,14 +202,14 @@
         </widget>
        </item>
        <item row="11" column="0">
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="joint_elastic_checkbox">
          <property name="text">
           <string>упругое сочленение</string>
          </property>
         </widget>
        </item>
        <item row="12" column="0">
-        <widget class="QCheckBox" name="checkBox_2">
+        <widget class="QCheckBox" name="slider_elastic_checkbox">
          <property name="text">
           <string>Упругий слайдер</string>
          </property>

@@ -21,7 +21,7 @@ public:
         return 3;
     }
 
-    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity)
+    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)
     {
         Vector3d ret_Force,rot_vel, Force_loss,proj_axis,dir_proj,test_axis;
 

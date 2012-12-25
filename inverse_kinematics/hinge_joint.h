@@ -65,7 +65,7 @@ public:
         else return false;
     }
 
-    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity)
+    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)
     {
         Vector3d ret_Force,rot_vel,Force_loss,dir_proj,test_axis,slider_Force,norm_Force;
         bool block=false;

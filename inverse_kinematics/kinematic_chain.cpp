@@ -543,7 +543,7 @@ void kinematic_chain::Forces_calculation(double velocity)
             child_dir=links[child_id]->dir;
 
              Force_before=Force;
-            Force=links[cur_joint_id]->calculate_Force(Force,effectors[e].K,cur_joint_id==effectors[e].id,child_dir,velocity);
+            Force=links[cur_joint_id]->calculate_Force(Force, effectors[e].K, cur_joint_id==effectors[e].id, child_dir, velocity, ELASTIC_GLOBAL);
        // qDebug("Force(%d): %f, %f, %f",cur_joint_id,Force.x(),Force.y(),Force.z());
             if(rot_max_Force)
             {
