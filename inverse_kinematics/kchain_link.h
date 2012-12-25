@@ -21,7 +21,7 @@ public:
     Vector3d global_position;//parent's end position (joint position)
 
     Quaterniond chain_transform; // общий поворот цепи (фактически предыдущего звена)
-    Quaterniond local_transform; // поворот звена
+    Quaterniond local_transform; // поворот звена (фактически хранят yaw*pitch*roll - поворото относительно пред-го звена)
     Quaterniond global_transform; // поворот звена (chain_transform+local_transform)
 
     //вектора направлений звена

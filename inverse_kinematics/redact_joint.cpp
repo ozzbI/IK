@@ -118,7 +118,7 @@ void redact_joint::on_Ok_but_clicked()
     // параметры упроугости джоинта
     kc->links[i]->joint_elastic = ui->joint_elastic_checkbox->isChecked();
     kc->links[i]->joint_elastic_K = ui->joint_elastic_K->value();
-    kc->links[i]->joint_elastic_angle = ui->joint_elastic_angle->value();
+    kc->links[i]->joint_elastic_angle = ui->joint_elastic_angle->value()*M_PI/180.0;
 
     // параметры упроугости слайдера
     kc->links[i]->slider_elastic = ui->slider_elastic_checkbox->isChecked();

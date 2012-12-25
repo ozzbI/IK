@@ -39,6 +39,7 @@ public:
             temp=rot_qt*temp*rot_qt.inverse();
             par_dir=Vector3d(temp.x(),temp.y(),temp.z());
         }
+
         for(unsigned int i=0;i<aa_limiter.size();i++)
         {
             temp=Quaterniond(0,aa_limiter[i].axis().x(),aa_limiter[i].axis().y(),aa_limiter[i].axis().z());
@@ -54,13 +55,54 @@ public:
 
     virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity, bool global_elastic)
     {
-        Vector3d ret_Force,rot_vel,rot_axis, Force_loss;
+        Vector3d ret_Force,rot_vel,rot_axis, Force_loss, elastic_Force;
         bool block=false;
+
+        elastic_Force = Vector3d(0,0,0);
+
+        if(global_elastic && slider_elastic) //обработка сил упругости
+        {
+            //да это кривой код
+
+            double dir_par_dir_angle=0; //угол между текущим направлением и направлением родителя
+            Vector3d par_dir; //parent bone direction
+            Quaterniond temp(0,0,0,0),rot_qt;
+
+            par_dir=Vector3d(0,0,-1);
+
+            if(id!=0)
+            {
+                temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
+                rot_qt = parent->global_transform*local_transform; //оставить только это в if
+                temp = rot_qt*temp*rot_qt.inverse();
+                par_dir = Vector3d(temp.x(),temp.y(),temp.z());
+            }
+            else
+            {
+                temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
+                rot_qt = local_transform;
+                temp = rot_qt*temp*rot_qt.inverse();
+                par_dir = Vector3d(temp.x(),temp.y(),temp.z());
+            }
+
+            dir_par_dir_angle=angle(dir,par_dir)-joint_elastic_angle;
+
+            if(dir_par_dir_angle>0)
+            {
+                // !!! не учтено K^2
+                elastic_Force = projection(par_dir,dir);
+                elastic_Force.normalize();
+                elastic_Force*=dir_par_dir_angle*joint_elastic_K;
+            }
+        }
 
         ret_Force=projection(dir,Force);
         rot_vel=Force-ret_Force;
         Force_loss=rot_vel*joint_Frict_K;
         rot_vel-=Force_loss;
+
+        rot_vel+=elastic_Force;
+
         //qDebug("rot_vel: %f, %f, %f",rot_vel.x(),rot_vel.y(),rot_vel.z());
         rot_axis=dir.cross(rot_vel);
 
@@ -89,7 +131,7 @@ public:
                 }
                 else block=true;
             }
-            if(block)(ret_Force+rot_vel)*ret_Force_K;
+            if(block) return (ret_Force+rot_vel-elastic_Force)*ret_Force_K;
             //if(block)(ret_Force/*+rot_vel*/)*ret_Force_K;
             else return ret_Force*ret_Force_K;
         }
@@ -107,7 +149,7 @@ public:
         }
         else block=true;
 
-        if(block)return (ret_Force+Force_loss+rot_vel)*ret_Force_K;
+        if(block)return (ret_Force+Force_loss+rot_vel-elastic_Force)*ret_Force_K;
        // if(block)return (ret_Force/*+Force_loss+rot_vel*/)*ret_Force_K;
         else return (ret_Force+Force_loss)*ret_Force_K;
     }
