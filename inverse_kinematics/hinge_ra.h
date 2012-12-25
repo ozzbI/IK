@@ -23,7 +23,7 @@ public:
 
     virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)
     {
-        Vector3d ret_Force,rot_vel, Force_loss,proj_axis,dir_proj,test_axis;
+        Vector3d ret_Force,rot_vel, Force_loss,proj_axis,dir_proj,test_axis,slider_Force_local;
 
 
         proj_axis=dir.cross(child_dir);
@@ -35,19 +35,22 @@ public:
         //обработка слайдера
         if (telescopic)
         {
-            slider_Force=proc_slider(dir_proj);
-            if((child_dir.x()==dir.x())&&(child_dir.y()==dir.y())&&(child_dir.z()==dir.z())) return (Force-dir_proj+slider_Force)*ret_Force_K;
-            ret_Force=Force-rot_vel-dir_proj+slider_Force;
+            slider_Force_local=proc_slider(dir_proj, global_elastic);
+            if((child_dir.x()==dir.x())&&(child_dir.y()==dir.y())&&(child_dir.z()==dir.z()))
+                return (Force-dir_proj+slider_Force_local)*ret_Force_K;
+            ret_Force=Force-rot_vel-dir_proj+slider_Force_local;
         }
         else
         {
-            if((child_dir.x()==dir.x())&&(child_dir.y()==dir.y())&&(child_dir.z()==dir.z())) return Force*ret_Force_K;
+            if((child_dir.x()==dir.x())&&(child_dir.y()==dir.y())&&(child_dir.z()==dir.z()))
+                return Force*ret_Force_K;
             ret_Force=Force-rot_vel;
         }
 
         test_axis=dir.cross(Force);
 
-        if(!(test_axis.x()||test_axis.y()||test_axis.z())) return ret_Force*ret_Force_K;
+        if(!(test_axis.x()||test_axis.y()||test_axis.z()))
+            return ret_Force*ret_Force_K;
 
         double rot_vel_scalar=K*sqrt(rot_vel(0)*rot_vel(0)+rot_vel(1)*rot_vel(1)+rot_vel(2)*rot_vel(2));
 

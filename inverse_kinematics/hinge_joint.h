@@ -67,7 +67,7 @@ public:
 
     virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)
     {
-        Vector3d ret_Force,rot_vel,Force_loss,dir_proj,test_axis,slider_Force,norm_Force;
+        Vector3d ret_Force,rot_vel,Force_loss,dir_proj,test_axis,slider_Force_local,norm_Force;
         bool block=false;
 
         if(subtype==2)
@@ -86,8 +86,8 @@ public:
         //обработка слайдера
         if (telescopic)
         {
-            slider_Force=proc_slider(dir_proj);
-            ret_Force=Force-rot_vel-dir_proj+slider_Force;
+            slider_Force_local=proc_slider(dir_proj, global_elastic);
+            ret_Force=Force-rot_vel-dir_proj+slider_Force_local;
         }
         else ret_Force=Force-rot_vel;
 

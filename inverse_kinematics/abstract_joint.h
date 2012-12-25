@@ -107,8 +107,21 @@ public:
         return atan2(x,y);
     }*/
 
-    Vector3d proc_slider(Vector3d &Force)
+    Vector3d proc_slider(Vector3d &Force, bool global_elastic)
     {
+        Vector3d elastic_F;
+        elastic_F = Vector3d(0,0,0);
+
+        if(global_elastic && slider_elastic)
+        {
+           double L;
+           L=length-min_length-slider_elastic_L;
+
+           if(L>0) elastic_F=-dir*(slider_elastic_K*L+slider_elastic_K_2*L);
+        }
+
+        slider_Force+=elastic_F; //силы упругости
+
         if(Force.dot(dir)>0&&length==max_length)
         {
             return Force;
@@ -117,6 +130,7 @@ public:
         {
             return Force;
         }
+
         slider_Force+=Force*slider_Frict_K;
         return Force*(1-slider_Frict_K);
     }

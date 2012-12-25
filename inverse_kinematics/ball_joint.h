@@ -65,7 +65,7 @@ public:
         rot_axis=dir.cross(rot_vel);
 
         //обработка слайдера
-        if (telescopic)ret_Force=proc_slider(ret_Force);
+        if (telescopic)ret_Force=proc_slider(ret_Force, global_elastic);
 
 
         if(!(rot_axis.x()||rot_axis.y()||rot_axis.z()))
