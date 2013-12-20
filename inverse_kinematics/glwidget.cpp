@@ -11,6 +11,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
        frmt.setSampleBuffers(true); // задать простую буферизацию
        frmt.setSamples(4);
        setFormat(frmt); // установить формат в контекст*/
+
     QGLContext *con;
     QGLFormat fm;
     fm.setProfile(QGLFormat::CoreProfile);
@@ -39,11 +40,11 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(update_screen()));
-    timer->start(10);
+    timer->start(17);
 
     cam.setPosition(&Vector3d(0,0,10));
 
-    light_pos=QVector4D(0,50,0,0);
+    light_pos=QVector4D(0,20,0,0);
     b1 =new box();
     b2 =new box();
     b1->model.translate(0,2,-4);
@@ -389,6 +390,9 @@ KChain.add_effector(5,1,target_for_effector);
     c=T*c;
     T=AngleAxisd(1,b);
 */
+
+
+
     Quaterniond a,b,c;
     Quaterniond qt1(AngleAxisd(M_PI/3,Vector3d(0,0,-1)));
     //qt1=qt1.conjugate();
@@ -446,8 +450,10 @@ void GLWidget::initializeGL()
 {
     glFuncs=new QGLFunctions(QGLContext::currentContext());
     glEnable(GL_DEPTH_TEST);
+
     glEnable(GL_CULL_FACE);
-    //glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
+    // glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
 
 
@@ -494,7 +500,7 @@ void GLWidget::initializeGL()
     b1->set_texures(textures);
     b1->inverse_normals();
     QMatrix4x4 m;
-    m.scale(200);
+    m.scale(75);
     b1->model=m;
     //--------------
 
@@ -511,6 +517,94 @@ void GLWidget::initializeGL()
 
 
     KChain.setshaderprog(program);
+
+    /*Scene init*/
+
+    scene = new Scene(program);
+
+    scene->update_IK_Chain_objects(&KChain); // need to be first
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 0].set_model_matrix(QVector3D(1.0,3.0,1.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 1].set_model_matrix(QVector3D(4.0,3.0,7.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 2].set_model_matrix(QVector3D(1.0,0.0,-9.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 3].set_model_matrix(QVector3D(8.0,3.0,1.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 4].set_model_matrix(QVector3D(-4.0,3.0,7.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 5].set_model_matrix(QVector3D(10.0,0.0,-9.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 6].set_model_matrix(QVector3D(12.0,-3.0,1.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 7].set_model_matrix(QVector3D(4.0,3.0,7.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 8].set_model_matrix(QVector3D(1.0,0.0,-9.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 9].set_model_matrix(QVector3D(-8.0,3.0,1.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 10].set_model_matrix(QVector3D(-4.0,3.0,17.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 11].set_model_matrix(QVector3D(-10.0,7.0,-9.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 12].set_model_matrix(QVector3D(1.0,3.0,1.0), QVector3D(3.0,1.0,7.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 13].set_model_matrix(QVector3D(4.0,3.0,7.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 14].set_model_matrix(QVector3D(1.0,8.0,-9.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 15].set_model_matrix(QVector3D(8.0,5.0,-1.0), QVector3D(3.0,1.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 16].set_model_matrix(QVector3D(-4.0,3.0,7.0), QVector3D(3.0,1.0,7.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 17].set_model_matrix(QVector3D(11.0,0.0,-3.0), QVector3D(3.0,10.0,1.0));
+
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 18].set_model_matrix(QVector3D(20.0,3.0,1.0), QVector3D(3.0,1.0,4.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 19].set_model_matrix(QVector3D(4.0,30.0,7.0), QVector3D(3.0,2.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 20].set_model_matrix(QVector3D(1.0,8.0,-22.0), QVector3D(3.0,1.0,7.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 21].set_model_matrix(QVector3D(8.0,5.0,-1.0), QVector3D(3.0,6.0,1.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 22].set_model_matrix(QVector3D(-4.0,25.0,7.0), QVector3D(7.0,1.0,7.0));
+
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
+    scene->Scene_objects[KChain.links.size() + 23].set_model_matrix(QVector3D(11.0,-6.0,-3.0), QVector3D(3.0,10.0,1.0));
+
+
+
+
+    scene->build_object_vertices_cash();
+
+
+
+    /*Scene init end*/
 
 }
 
@@ -542,6 +636,15 @@ void GLWidget::paintGL()
     glColor3f(0,0,1);
     glVertex3f(b.x(),b.y(),b.z());
     glEnd();*/
+
+    //scene objects
+
+    scene->recalc_IK_chain_model();
+    scene->draw_objects();
+
+    //scene->draw_polys(); //debug
+
+    scene->detect_all_collisions();
 
     //scene_box
     glCullFace(GL_FRONT);
@@ -721,7 +824,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent * /* event */)
 void GLWidget::wheelEvent(QWheelEvent * event)
 {
     if(!cam.scene_view)cam.walk(event->delta()/400.0f);
-    else cam.rot_cam(0,0,-event->delta()/100.0f);;
+    else cam.rot_cam(0,0,-event->delta()/100.0f);
 }
 
 void GLWidget::update_screen()   //SLOT

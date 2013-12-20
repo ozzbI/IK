@@ -53,7 +53,7 @@ public:
     vector<effector,Eigen::aligned_allocator<effector> > effectors;
 
     kinematic_chain();
-    void Eigen_Matr_to_Qt_Matr(QMatrix4x4 &qm,Matrix3d &em);
+    static void Eigen_Matr_to_Qt_Matr(QMatrix4x4 &qm,Matrix3d &em);
     void add_link(int type,Vector3d in_pos,double in_lenght,int in_parent_id,double yaw,double pitch,double roll);
     void total_link_recalculation(int start_link_id);
     void childs_recalculation(int start_link_id);

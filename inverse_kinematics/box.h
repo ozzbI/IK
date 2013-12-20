@@ -9,7 +9,7 @@
 class box
 {
 public:
-    box ();
+    box (int clipped = 0);
     void setshaderprog(QGLShaderProgram* new_prog);
     void set_material(QVector4D new_material);
     void set_texures(GLuint* new_textures);

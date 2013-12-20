@@ -19,7 +19,9 @@ SOURCES += main.cpp\
     kinematic_chain.cpp \
     kchain_link.cpp \
     joint_choise.cpp \
-    redact_joint.cpp
+    redact_joint.cpp \
+    scene.cpp \
+    figure.cpp
 
 HEADERS  += mainwindow.h \
     box.h \
@@ -36,7 +38,10 @@ HEADERS  += mainwindow.h \
     abstract_joint.h \
     hinge_ra.h \
     joint_choise.h \
-    redact_joint.h
+    redact_joint.h \
+    figure.h \
+    polygon.h \
+    scene.h
 
 FORMS    += mainwindow.ui \
     joint_choise.ui \
@@ -48,5 +53,3 @@ OTHER_FILES += \
 
 RESOURCES += \
     resources.qrc
-
-

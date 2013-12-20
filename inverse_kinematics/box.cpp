@@ -1,35 +1,53 @@
 #include "box.h"
 
-box::box()
+box::box(int clipped)
 {
     without_texture=1;
 
-    static const int coords[6][4][3] = {
-        { { +1, -1, -1 }, { -1, -1, -1 }, { -1, +1, -1 }, { +1, +1, -1 } },
-        { { +1, +1, -1 }, { -1, +1, -1 }, { -1, +1, +1 }, { +1, +1, +1 } },
-        { { +1, -1, +1 }, { +1, -1, -1 }, { +1, +1, -1 }, { +1, +1, +1 } },
-        { { -1, -1, -1 }, { -1, -1, +1 }, { -1, +1, +1 }, { -1, +1, -1 } },
-        { { +1, -1, +1 }, { -1, -1, +1 }, { -1, -1, -1 }, { +1, -1, -1 } },
-        { { -1, -1, +1 }, { +1, -1, +1 }, { +1, +1, +1 }, { -1, +1, +1 } }
+    static const int coords[6][6][3] = {
+        { { +1, -1, -1 }, { -1, -1, -1 }, { -1, +1, -1 }, { +1, +1, -1 }, { +1, -1, -1 }, { -1, +1, -1 } },
+        { { +1, +1, -1 }, { -1, +1, -1 }, { -1, +1, +1 }, { +1, +1, +1 }, { +1, +1, -1 }, { -1, +1, +1 } },
+        { { +1, -1, +1 }, { +1, -1, -1 }, { +1, +1, -1 }, { +1, +1, +1 }, { +1, -1, +1 }, { +1, +1, -1 } },
+        { { -1, -1, -1 }, { -1, -1, +1 }, { -1, +1, +1 }, { -1, +1, -1 }, { -1, -1, -1 }, { -1, +1, +1 } },
+        { { +1, -1, +1 }, { -1, -1, +1 }, { -1, -1, -1 }, { +1, -1, -1 }, { +1, -1, +1 }, { -1, -1, -1 } },
+        { { -1, -1, +1 }, { +1, -1, +1 }, { +1, +1, +1 }, { -1, +1, +1 }, { -1, -1, +1 }, { +1, +1, +1 } }
     };
+
 
    /*for (int j=0; j < 6; ++j) {
         textures[j] = gl->bindTexture
          (QPixmap(QString(":/images/side%1.png").arg(j + 1)), GL_TEXTURE_2D);
     }*/
 
-    for (int i = 0; i < 6; ++i) {
-        for (int j = 0; j < 4; ++j) {
+    for (int i = 0; i < 6; ++i)
+    {
+        if (clipped)
+        {
+            if (i == 0|| i == 5) continue;
+        }
+
+        for (int j = 0; j < 6; ++j)
+        {
+
             texCoords.append
-                (QVector2D(j == 0 || j == 3, j == 0 || j == 1));
+                (QVector2D(j == 0 || j == 3 , j == 0 || j == 1 || j == 4));//нужно править
             vertices.append
                 (QVector4D(0.5*QVector3D(coords[i][j][0],coords[i][j][1],
                            coords[i][j][2]),1));
+
+            if(i==0) normals.append(QVector4D(0,0,-1,0.0));
+            if(i==1) normals.append(QVector4D(0,1,0,0.0));
+            if(i==2) normals.append(QVector4D(1,0,0,0.0));
+            if(i==3) normals.append(QVector4D(-1,0,0,0.0));
+            if(i==4) normals.append(QVector4D(0,-1,0,0.0));
+            if(i==5) normals.append(QVector4D(0,0,1,0.0));
         }
 
 
-        for (int i = 0; i < 6; ++i) {
-            for (int j = 0; j < 4; ++j) {
+        /*for (int i = 0; i < 6; ++i)
+        {
+            for (int j = 0; j < 6; ++j)
+            {
                 if(i==0) normals.append(QVector4D(0,0,-1,0.0));
                 if(i==1) normals.append(QVector4D(0,1,0,0.0));
                 if(i==2) normals.append(QVector4D(1,0,0,0.0));
@@ -37,7 +55,7 @@ box::box()
                 if(i==4) normals.append(QVector4D(0,-1,0,0.0));
                 if(i==5) normals.append(QVector4D(0,0,1,0.0));
             }
-        }
+        }*/
 
     }
 }
@@ -80,10 +98,12 @@ void box::draw()
     (2, normals.constData());
 
 
-    for (int i = 0; i < 6; ++i)
+    /*for (int i = 0; i < 6; ++i)
     {
         //glBindTexture(GL_TEXTURE_2D, textures[i]);
         glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);
-    }
+    }*/
+
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
 }

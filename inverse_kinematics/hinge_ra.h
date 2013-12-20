@@ -52,16 +52,16 @@ public:
         if(!(test_axis.x()||test_axis.y()||test_axis.z()))
             return ret_Force*ret_Force_K;
 
-        double rot_vel_scalar=K*sqrt(rot_vel(0)*rot_vel(0)+rot_vel(1)*rot_vel(1)+rot_vel(2)*rot_vel(2));
+        double rot_vel_scalar = K*sqrt(rot_vel(0)*rot_vel(0)+rot_vel(1)*rot_vel(1)+rot_vel(2)*rot_vel(2));
 
         if(Force.dot(proj_axis)<0) rot_vel_scalar=-rot_vel_scalar;
 
         Quaterniond new_Force(AngleAxisd(rot_vel_scalar, dir));
 
-        Result_Force.w()=Result_Force.w()+new_Force.w();
-        Result_Force.x()=Result_Force.x()+new_Force.x();
-        Result_Force.y()=Result_Force.y()+new_Force.y();
-        Result_Force.z()=Result_Force.z()+new_Force.z();
+        Result_Force.w() = Result_Force.w() + new_Force.w();
+        Result_Force.x() = Result_Force.x() + new_Force.x();
+        Result_Force.y() = Result_Force.y() + new_Force.y();
+        Result_Force.z() = Result_Force.z() + new_Force.z();
 
 
         return ret_Force*ret_Force_K;

@@ -1,6 +1,5 @@
 #include <QtGui/QApplication>
 #include "mainwindow.h"
-#include "glwidget.h"
 #include <QLayout>
 
 /*
@@ -30,6 +29,9 @@ public:
 /* Git test 3 */
 int main(int argc, char *argv[])
 {
+
+
+
     QApplication a(argc, argv);
 
     /*A* p_A;

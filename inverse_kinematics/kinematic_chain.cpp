@@ -79,7 +79,7 @@ void kinematic_chain::draw_chain()
             link_box.set_material(QVector4D(0.7,0.7,0.7,0.7));
             link_box.draw();
         }
-        //рисуется основние елси кость телеякопическая
+        //рисуется основние елси кость телескопическая
         if(links[i]->telescopic)
         {
             link_box.set_material(QVector4D(0.25,0.9,0.25,0));//цвет осноывния телескопического звена
@@ -344,9 +344,19 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
 
     if(links[start_link_id]->type==1&&links[start_link_id]->rotation_possibility(q,velocity)) return;
 
-        links[start_link_id]->global_transform=q*links[start_link_id]->global_transform;
 
-        refresh_bones_axis(start_link_id);
+    //for error compensation
+    /*if ( links[start_link_id]->root==false)
+    {
+         int parent_id=links[start_link_id]->parent_id;
+         links[start_link_id]->chain_transform=links[parent_id]->global_transform;
+         links[start_link_id]->local_transform=q*links[start_link_id]->local_transform;
+    }*/
+
+
+    links[start_link_id]->global_transform=q*links[start_link_id]->global_transform;
+
+    refresh_bones_axis(start_link_id);
 
     for(int i=0;i<child_num;i++)
     {
@@ -624,18 +634,18 @@ void kinematic_chain::rotation_step_calculate(double velocity)
             if(joints_to_move[i]->telescopic)
             {
                 double slider_Force_len;
-                slider_Force_len=sqrt(joints_to_move[i]->slider_Force.x()*joints_to_move[i]->slider_Force.x()
+                slider_Force_len = sqrt(joints_to_move[i]->slider_Force.x()*joints_to_move[i]->slider_Force.x()
                                      +joints_to_move[i]->slider_Force.y()*joints_to_move[i]->slider_Force.y()
                                      +joints_to_move[i]->slider_Force.z()*joints_to_move[i]->slider_Force.z());
 
                 if(joints_to_move[i]->slider_Force.dot(joints_to_move[i]->dir)>0)
                 {
-                    joints_to_move[i]->length+=slider_Force_len*velocity;
+                    joints_to_move[i]->length += slider_Force_len*velocity;
                     if(joints_to_move[i]->length>joints_to_move[i]->max_length)   joints_to_move[i]->length=joints_to_move[i]->max_length;
                 }
                 if(joints_to_move[i]->slider_Force.dot(joints_to_move[i]->dir)<0)
                 {
-                    joints_to_move[i]->length-=slider_Force_len*velocity;
+                    joints_to_move[i]->length -= slider_Force_len*velocity;
                     if(joints_to_move[i]->length<joints_to_move[i]->min_length)   joints_to_move[i]->length=joints_to_move[i]->min_length;
                 }
             }
@@ -647,11 +657,11 @@ void kinematic_chain::rotation_step_calculate(double velocity)
             for(unsigned int j=0;j<joints_to_move[i]->childs_id.size();j++)
             {
                 //нужна проврка на вхождение joints_to_move, для пересчёта потомков не входящих в цепь поворота
-                abstract_joint* bone=links[joints_to_move[i]->childs_id[j]];
-                bone->global_position=joints_to_move[i]->global_position+joints_to_move[i]->dir*joints_to_move[i]->length*bone->position(2)
-                        +joints_to_move[i]->right*bone->position(0)+joints_to_move[i]->up*bone->position(1);
+                abstract_joint* bone = links[joints_to_move[i]->childs_id[j]];
+                bone->global_position = joints_to_move[i]->global_position + joints_to_move[i]->dir * joints_to_move[i]->length * bone->position(2)
+                        + joints_to_move[i]->right * bone->position(0)+joints_to_move[i]->up*bone->position(1);
                 // Обновление Угла ---------------------------------------
-                if (!(rot_max_Force&&joints_to_move[i]->id!=max_Force_id)) childs_glob_trans_recalc(bone->id,rot_quat,velocity);
+                if (!(rot_max_Force&&joints_to_move[i]->id != max_Force_id)) childs_glob_trans_recalc(bone->id,rot_quat,velocity);
                    //bone->global_transform=rot_quat*bone->global_transform; //
                    //bone->refresh_bone_axis();//обновление осей кости
                    //bone->global_transform=bone->global_transform*rot_quat;
@@ -668,12 +678,12 @@ void kinematic_chain::rotation_step_calculate(double velocity)
 
         for(unsigned int i=0;i<joints_to_move.size();i++) //сброс сил после итерации-------------------
         {
-            joints_to_move[i]->Result_Force.x()=0;
-            joints_to_move[i]->Result_Force.y()=0;
-            joints_to_move[i]->Result_Force.z()=0;
-            joints_to_move[i]->Result_Force.w()=0;
+            joints_to_move[i]->Result_Force.x() = 0;
+            joints_to_move[i]->Result_Force.y() = 0;
+            joints_to_move[i]->Result_Force.z( )= 0;
+            joints_to_move[i]->Result_Force.w( )= 0;
 
-            joints_to_move[i]->slider_Force=Vector3d(0,0,0);
+            joints_to_move[i]->slider_Force = Vector3d(0,0,0);
         }
 
         joints_to_move.clear();
@@ -694,9 +704,9 @@ void kinematic_chain::refresh_bones_axis(int id)
     Matrix3d global_transform_matr=links[id]->global_transform.toRotationMatrix();
 
     //оси после поворота звена
-    links[id]->dir=global_transform_matr*Vector3d(0,0,-1);
-    links[id]->right=global_transform_matr*Vector3d(1,0,0);
-    links[id]->up=global_transform_matr* Vector3d(0,1,0);
+    links[id]->dir = global_transform_matr * Vector3d(0,0,-1);
+    links[id]->right = global_transform_matr * Vector3d(1,0,0);
+    links[id]->up = global_transform_matr * Vector3d(0,1,0);
 
     links[id]->dir.normalize();
     links[id]->right.normalize();

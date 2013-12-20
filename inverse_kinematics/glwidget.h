@@ -12,6 +12,7 @@
 #include <prism.h>
 #include <sphere.h>
 #include <redact_joint.h>
+#include <scene.h>
 
 
 /* MyGui Test*/
@@ -60,12 +61,14 @@ public:
 
     kinematic_chain KChain;
 
+    Scene* scene;
+
 
     void set_lp()
     {
         program->setUniformValue("light_pos",light_pos);
     }
-//впеменно тут
+//временно тут
     float poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point )
     {
        QVector3D origin,direction,p0,p1,p2;

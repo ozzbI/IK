@@ -69,6 +69,12 @@ private slots:
     void on_elastic_joints_checkbox_clicked(bool checked);
     void on_Target_Activated_checkbox_stateChanged(int arg1);
     void on_elastic_joints_checkbox_stateChanged(int arg1);
+
+    //menu
+    void createActions();
+    void createMenus();
+
+
 };
 
 #endif // MAINWINDOW_H

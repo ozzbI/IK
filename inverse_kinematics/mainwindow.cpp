@@ -33,6 +33,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(this,SIGNAL(rotate_link(int,double,double,double)),glw,SLOT(rotate_KChain_link(int,double,double,double)));
     connect(this,SIGNAL(set_link_rotation(int,double,double,double)),glw,SLOT(set_KChain_link_angles(int,double,double,double)));
+
+    //menu
+    this->createActions();
+    this->createMenus();
 }
 
 MainWindow::~MainWindow()
@@ -547,4 +551,20 @@ void MainWindow::on_elastic_joints_checkbox_stateChanged(int arg1)
 {
     if(arg1==2)glw->KChain.set_ELASTIC_GLOBAL(true);
     else if(arg1==0) glw->KChain.set_ELASTIC_GLOBAL(false);
+}
+
+//menu
+void  MainWindow::createActions()
+{
+
+}
+
+void  MainWindow::createMenus()
+{
+    QMenu * mnFile = new QMenu("File");
+    QMenu * mnSceneObjects = new QMenu("Scene Objects");
+
+    ui->menuBar->addMenu(mnFile);
+    ui->menuBar->addMenu(mnSceneObjects);
+
 }
