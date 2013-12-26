@@ -21,9 +21,14 @@ box::box(int clipped)
 
     for (int i = 0; i < 6; ++i)
     {
-        if (clipped)
+        if (clipped == 1)
         {
             if (i == 0|| i == 5) continue;
+        }
+
+        if (clipped == 2)
+        {
+            if (i == 5) continue;
         }
 
         for (int j = 0; j < 6; ++j)

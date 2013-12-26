@@ -189,6 +189,9 @@ private:
     cylinder* c1;
     prism* pr1;
     sphere* sph1;
+
+    box* collision_box;
+
     Vector3d target_for_effector;
 
     coord_axis coordinate_axis;
@@ -198,6 +201,8 @@ private slots:
     void set_time_speed(int new_time_speed);
     void rotate_KChain_link(int id,double yaw,double pitch,double roll);
     void set_KChain_link_angles(int id,double yaw,double pitch,double roll);
+
+    void draw_collision_box(QVector3D collision_point);
 };
 
 #endif

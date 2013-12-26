@@ -10,6 +10,8 @@ QT       += opengl
 TARGET = inverse_kinematics
 TEMPLATE = app
 
+#QMAKE_CXXFLAGS_DEBUG += -pg
+#QMAKE_LFLAGS_DEBUG += -pg
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -21,7 +23,8 @@ SOURCES += main.cpp\
     joint_choise.cpp \
     redact_joint.cpp \
     scene.cpp \
-    figure.cpp
+    figure.cpp \
+    octree.cpp
 
 HEADERS  += mainwindow.h \
     box.h \
@@ -41,7 +44,8 @@ HEADERS  += mainwindow.h \
     redact_joint.h \
     figure.h \
     polygon.h \
-    scene.h
+    scene.h \
+    octree.h
 
 FORMS    += mainwindow.ui \
     joint_choise.ui \

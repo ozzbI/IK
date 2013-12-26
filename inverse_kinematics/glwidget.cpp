@@ -40,7 +40,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(update_screen()));
-    timer->start(17);
+    timer->start(20);
 
     cam.setPosition(&Vector3d(0,0,10));
 
@@ -92,7 +92,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
 
     //test 2 good
 
-    KChain.add_link(2,Vector3d(0,0,0),2,0,0,0,0);
+    /*KChain.add_link(2,Vector3d(0,0,0),2,0,0,0,0);
     KChain.set_link_size(0,0.3,0.3);
     KChain.set_joint_Frict(0,0.4);
 
@@ -119,7 +119,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     KChain.set_subtype(4,2);
     KChain.set_joint_Frict(4,0.4);
 
-    KChain.add_effector(4,1,target_for_effector);
+    KChain.add_effector(4,1,target_for_effector);*/
 
     //KChain.total_link_recalculation(0);
 
@@ -177,8 +177,8 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
         KChain.add_effector(2,1,target_for_effector);*/
 
     //test 7 BALLCHAIN
-/*
-    int size=3;
+
+    int size=10;
 
     KChain.add_link(1,Vector3d(0,0,0),2,0,0,M_PI/2,0);
     KChain.set_link_size(0,0.3,0.3);
@@ -188,7 +188,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
 
     for (int i=0;i<size;i++)
     {
-        KChain.add_link(2,Vector3d(0,0,1),3,i,0,0,0);
+        KChain.add_link(1,Vector3d(0,0,1),3,i,0,0,0);
         KChain.set_link_size(i+1,0.6,0.6);
         KChain.enable_telescopic(i+1,true,1,3,0.5);
         KChain.set_joint_Frict(i+1,0.4);
@@ -433,6 +433,9 @@ KChain.add_effector(5,1,target_for_effector);
 */
     /*MyGui---------------*/
 
+
+
+
 }
 
 GLWidget::~GLWidget()
@@ -525,13 +528,13 @@ void GLWidget::initializeGL()
     scene->update_IK_Chain_objects(&KChain); // need to be first
 
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
-    scene->Scene_objects[KChain.links.size() + 0].set_model_matrix(QVector3D(1.0,3.0,1.0), QVector3D(3.0,1.0,1.0));
+    scene->Scene_objects[KChain.links.size() + 0].set_model_matrix(QVector3D(1.1,3.1,1.1), QVector3D(3.0,10.0,1.0));
 
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
     scene->Scene_objects[KChain.links.size() + 1].set_model_matrix(QVector3D(4.0,3.0,7.0), QVector3D(3.0,2.0,1.0));
 
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
-    scene->Scene_objects[KChain.links.size() + 2].set_model_matrix(QVector3D(1.0,0.0,-9.0), QVector3D(3.0,1.0,1.0));
+    scene->Scene_objects[KChain.links.size() + 2].set_model_matrix(QVector3D(4.0,-2.1,-9.0), QVector3D(3.0,1.0,1.0));
 
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
     scene->Scene_objects[KChain.links.size() + 3].set_model_matrix(QVector3D(8.0,3.0,1.0), QVector3D(3.0,1.0,1.0));
@@ -604,7 +607,16 @@ void GLWidget::initializeGL()
 
 
 
+    scene->build_octree(100.0, false);
     /*Scene init end*/
+
+    collision_box = new box();
+    collision_box->setshaderprog(program);
+
+    //signals connection
+
+    connect(scene,SIGNAL(draw_collision_box(QVector3D)),this,SLOT(draw_collision_box(QVector3D)));
+    //connect(scene->dcThread,SIGNAL(draw_collision_box(QVector3D)),this,SLOT(draw_collision_box(QVector3D)),Qt::QueuedConnection);
 
 }
 
@@ -629,6 +641,8 @@ void GLWidget::paintGL()
         sph1->draw();
     }
 
+
+
     /*///sphere trace test
     glBegin(GL_LINES);
     glColor3f(0,0,1);
@@ -640,9 +654,13 @@ void GLWidget::paintGL()
     //scene objects
 
     scene->recalc_IK_chain_model();
+
+   // scene->build_octree(100.0, true);
+
     scene->draw_objects();
 
     //scene->draw_polys(); //debug
+   // scene->draw_edges();
 
     scene->detect_all_collisions();
 
@@ -830,5 +848,17 @@ void GLWidget::wheelEvent(QWheelEvent * event)
 void GLWidget::update_screen()   //SLOT
 {
     updateGL();
+}
+
+void GLWidget::draw_collision_box(QVector3D collision_point)
+{
+    QMatrix4x4 matr;
+
+    matr.translate(collision_point);
+
+    matr.scale(0.1);
+
+    collision_box->model=matr;
+    collision_box->draw();
 }
 

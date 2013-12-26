@@ -2,10 +2,26 @@
 #define FIGURE_H
 #include <polygon.h>
 
+class edge
+{
+    public:
+
+    edge()
+    {
+
+    }
+
+    QVector3D A;
+    QVector3D B;
+};
+
 class figure
 {
 public:
     QVector<polygon> polys;
+
+    QVector<edge> edges_ref;
+    QVector<edge> edges;
 
 
     QMatrix4x4 model;
@@ -67,6 +83,30 @@ public:
         {
             polys[i].program = program;
             polys[i].draw();
+        }
+    }
+
+    void draw_edges()
+    {
+        QMatrix4x4 identity;
+
+        program->setUniformValue("model_matrix", identity);
+        program->setUniformValue("material", QVector4D(1.0,1.0,1.0,1.0));
+
+        for(int i=0;i<edges.size();i++)
+        {
+            QVector<QVector3D> v;
+            v.push_back(edges[i].A);
+            v.push_back(edges[i].B);
+
+            program->setAttributeArray
+            (0, v.constData());
+
+            program->setUniformValue("selected", 1);
+
+            glDrawArrays(GL_LINES, 0, 2);
+
+            program->setUniformValue("selected", 0);
         }
     }
 

@@ -4,10 +4,39 @@
 #include "figure.h"
 #include "box.h"
 #include "kinematic_chain.h"
+#include "octree.h"
 
-class Scene
+#include <QObject>
+#include <QThread>
+
+class dc_Worker;
+
+class direct_collision_Thread : public QThread
 {
+    Q_OBJECT
+
 public:
+
+    direct_collision_Thread()
+    {
+
+    }
+
+    void run();
+
+//signals:
+  //  void draw_collision_box(QVector3D collision_point);
+};
+
+
+
+class Scene : public QObject
+{
+    Q_OBJECT
+
+public:
+
+
 
     QVector<figure> Scene_objects; //IK chain object in 1st element
     QVector<figure> IK_Chain_objects;
@@ -20,7 +49,21 @@ public:
 
     box *b1; //for debug purposes
 
-    Scene(QGLShaderProgram *program);
+
+
+    octree *scene_octree;
+
+    octree *chain_octree;
+
+    direct_collision_Thread *dcThread;
+
+    dc_Worker *dcWorker;
+
+    QMutex dc_mutex;
+
+    QVector<QVector3D> intersect_points; // for direct collision (miltithreded)
+
+    bool dc_proc_ended;
 
     void draw_objects();
     void move_object(int i, double x,double y, double z);
@@ -34,6 +77,8 @@ public:
     GLuint *textures;
     int without_texture;*/
 
+    Scene(QGLShaderProgram *program);
+
     void add_object(QVector<QVector4D> &vertices, QVector<QVector4D> &normals, QVector<QVector2D> &texCoords,QGLShaderProgram *program, QVector4D material, GLuint *textures = 0, int without_texture = 1);
     void update_IK_Chain_objects(kinematic_chain* Chain);
 
@@ -45,8 +90,13 @@ public:
 
     bool detect_all_collisions();
     bool collision_detect(int part_id, QVector<figure> &figures);
+    bool collision_detect_octree(int part_id, QVector<figure> &figures);
     bool direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures);
     int poly_intersect( QVector3D l1, QVector3D l2, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
+
+    void build_octree(double boundingBoxSize, bool for_chain);
+
+    bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode &node, QVector3D &inters_point);
 
     //debug
 
@@ -58,11 +108,55 @@ public:
         }
     }
 
+    void draw_edges()
+    {
+        for (int i = 0 ; i < Scene_objects.size(); i++)
+        {
+            Scene_objects[i].draw_edges();
+        }
+    }
+
+signals:
+    void draw_collision_box(QVector3D collision_point);
+
+    void dc_start_process();
+    void lock_dc_mutex();
 
 
 };
 
 
+class dc_Worker : public QObject
+{
+    Q_OBJECT
 
+public:
+
+    Scene *scene;
+
+    dc_Worker()
+    {
+
+    }
+
+    void set_scene(Scene *new_scene)
+    {
+        scene = new_scene;
+    }
+
+    bool direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures);
+    bool direct_collision_detect_octree(int part_id,int test_part_id, QVector<figure> &figures);
+    int poly_intersect( QVector3D l1, QVector3D l2, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
+    bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point);
+
+protected slots:
+
+    bool process();
+    void lock_dc_mutex()
+    {
+        scene->dc_mutex.lock();
+    }
+
+};
 
 #endif // SCENE_H

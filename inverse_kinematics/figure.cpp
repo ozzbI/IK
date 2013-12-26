@@ -48,6 +48,12 @@ void figure::update_polys_cash()
         polys[i].vertices.push_back(QVector3D( model * vertices[i*3 + 1] ));
         polys[i].vertices.push_back(QVector3D( model * vertices[i*3 + 2] ));
     }
+
+    for(int i = 0; i < edges.size(); i++)
+    {
+        edges[i].A = model * edges_ref[i].A ;
+        edges[i].B = model * edges_ref[i].B ;
+    }
 }
 
 void figure::rebuild_polys_cash()
@@ -57,6 +63,12 @@ void figure::rebuild_polys_cash()
         polys[i].vertices[0] = (QVector3D( model * vertices[i*3] ));
         polys[i].vertices[1] = (QVector3D( model * vertices[i*3 + 1] ));
         polys[i].vertices[2] = (QVector3D( model * vertices[i*3 + 2] ));
+    }
+
+    for(int i = 0; i < edges.size(); i++)
+    {
+        edges[i].A = model * edges_ref[i].A ;
+        edges[i].B = model * edges_ref[i].B ;
     }
 }
 
