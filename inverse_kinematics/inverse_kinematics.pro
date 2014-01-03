@@ -53,7 +53,12 @@ FORMS    += mainwindow.ui \
 
 OTHER_FILES += \
     frag_shader.frag \
-    vert_shader.vert
+    vert_shader.vert \
+    ssao_build_buffer.vert \
+    ssao_build_buffer.frag \
+    ssao_build_shaded_texture.vert \
+    ssao_build_shaded_texture.frag \
+    ssao_blur.frag
 
 RESOURCES += \
     resources.qrc

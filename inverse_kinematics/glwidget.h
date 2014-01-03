@@ -46,6 +46,7 @@ public:
     bool stop_proc,main_stop;
     double move_vel;
 
+    QGLFramebufferObject* fbo;
 
 //for tests
     bool test_trigger;

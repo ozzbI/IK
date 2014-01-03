@@ -23,7 +23,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     fm.setAccum(true);
     fm.setDepth(true);
     fm.setDirectRendering(true);
-    con=new QGLContext(fm);
+    con = new QGLContext(fm);
     con->setFormat(fm);
     con->create();
     con->makeCurrent();
@@ -435,7 +435,10 @@ KChain.add_effector(5,1,target_for_effector);
 
 
 
+// FBO init
 
+    makeCurrent();
+    fbo = new QGLFramebufferObject(512, 512);
 }
 
 GLWidget::~GLWidget()
@@ -458,6 +461,7 @@ void GLWidget::initializeGL()
     glCullFace(GL_BACK);
     // glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
+
 
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -699,8 +703,16 @@ void GLWidget::resizeGL(int width, int height)
     glViewport(0 ,0, width, height);
     QMatrix4x4 new_perspective;
     p=new_perspective;
-    p.perspective(view_angle,aspect_ratio,1,10000);
+    p.perspective(view_angle,aspect_ratio,1,300);
     program->setUniformValue("proj_matrix", p);
+
+    //QGLFramebufferObjectFormat fbo_format;
+
+    //fbo_format.setInternalTextureFormat(GL_RGBA32F);
+
+    delete fbo;
+    fbo = new QGLFramebufferObject(width, height);
+
 }
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
