@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+ï»¿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-   //èíòðåôåéñ
+   //Ð¸Ð½Ñ‚Ñ€ÐµÑ„ÐµÐ¹Ñ
     ctrl_pressed=false;
     ui->object_cam_but->setDisabled(true);
     //ui->free_cam_but->hide();
@@ -225,6 +225,8 @@ void MainWindow::on_yaw_sl_valueChanged(int value)
     double roll=glw->KChain.links[link_id]->roll;
     double v=value;
     set_link_rotation(ui->link->value(),v/100*M_PI,pitch,roll);
+
+    glw->KChain.collision = false;
 }
 
 void MainWindow::on_pitch_sl_valueChanged(int value)
@@ -234,6 +236,8 @@ void MainWindow::on_pitch_sl_valueChanged(int value)
     double roll=glw->KChain.links[link_id]->roll;
     double v=value;
     set_link_rotation(ui->link->value(),yaw,v/100*M_PI,roll);
+
+    glw->KChain.collision = false;
 }
 
 void MainWindow::on_roll_sl_valueChanged(int value)
@@ -243,6 +247,8 @@ void MainWindow::on_roll_sl_valueChanged(int value)
     double pitch=glw->KChain.links[link_id]->pitch;
     double v=value;
     set_link_rotation(ui->link->value(),yaw,pitch,v/100*M_PI);
+
+    glw->KChain.collision = false;
 }
 
 void MainWindow::on_free_cam_but_clicked()
@@ -283,7 +289,8 @@ void MainWindow::on_del_link_but_clicked()
     if(glw->KChain.get_size()>1)
     {
         glw->KChain.del_link(ui->link->value());
-        ui->link->setMaximum(glw->KChain.get_size()-1);
+        ui->link->setMaximum(glw->KChain.get_size()- 1);
+        glw->scene->update_IK_Chain_objects(&glw->KChain);
     }
 }
 
@@ -292,8 +299,10 @@ void MainWindow::on_add_link_but_clicked()
     jc=new joint_choise();
     jc->setModal(true);
     connect(jc,SIGNAL(set_max_link()),this,SLOT(set_max_link()));
-    jc->show();
+    jc->set_scene(glw->scene);
     jc->set_kc(&glw->KChain,ui->link->value());
+    jc->show();
+
     //glw->KChain.add_link_to_middle(1,Vector3d(0,0,1),2,ui->link->value(),0,0,0);
 }
 
@@ -340,7 +349,7 @@ void MainWindow::on_save_to_file_but_clicked()
             out<<glw->KChain.links[i]->lim_ang[1]; out<< " ";
         }
 
-        /* ïàðàìåòðû ýëàñòè÷íîñòè*/
+        /* Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑÐ»Ð°ÑÑ‚Ð¸Ñ‡Ð½Ð¾ÑÑ‚Ð¸*/
 
         out << glw->KChain.links[i]->joint_elastic << " " ;
         out << glw->KChain.links[i]->joint_elastic_K << " " ;
@@ -366,12 +375,12 @@ void MainWindow::on_opne_file_but_clicked()
     fname=QFileDialog::getOpenFileName(this, tr("OpenFile"),"C:/Qt_projects/inverse_kinematics/chain_files",tr("chain1(*.kChain)"));
     QFile file(fname);
 
-    // ïàðàìåòðû óïðóãîñòè ñóñòàâà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÑƒÑÑ‚Ð°Ð²Ð°
     int joint_elastic;
     double joint_elastic_K;
     double joint_elastic_K_2;
     double joint_elastic_angle;
-    // ïàðàìåòðû óïðîóãîñòè ñëàéäåðà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÐ»Ð°Ð¹Ð´ÐµÑ€Ð°
     int slider_elastic;
     double slider_elastic_K;
     double slider_elastic_K_2;
@@ -450,7 +459,7 @@ void MainWindow::on_opne_file_but_clicked()
         if(buf=="END") break;
         ang2=buf.toDouble();
 
-        // ïàðàìåòðû óïðóãîñòè ñóñòàâà
+        // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÑƒÑÑ‚Ð°Ð²Ð°
 
         in>>buf;
         if(buf=="END") break;
@@ -468,7 +477,7 @@ void MainWindow::on_opne_file_but_clicked()
         if(buf=="END") break;
         joint_elastic_angle=buf.toDouble();
 
-        // ïàðàìåòðû óïðîóãîñòè ñëàéäåðà
+        // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÐ»Ð°Ð¹Ð´ÐµÑ€Ð°
 
         in>>buf;
         if(buf=="END") break;
@@ -506,7 +515,7 @@ void MainWindow::on_opne_file_but_clicked()
         }
         else glw->KChain.set_lim_angles(c,ang1,ang2,0,0);
 
-        // ïàðàìåòðû óïðîóãîñòè
+        // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸
         glw->KChain.set_joint_elastic(c,(bool)joint_elastic,joint_elastic_K,joint_elastic_K_2,joint_elastic_angle);
         glw->KChain.set_slider_elastic(c,(bool)slider_elastic,slider_elastic_K,slider_elastic_K_2,slider_elastic_L);
 

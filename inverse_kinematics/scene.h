@@ -1,4 +1,4 @@
-#ifndef SCENE_H
+﻿#ifndef SCENE_H
 #define SCENE_H
 
 #include "figure.h"
@@ -113,6 +113,14 @@ public:
         for (int i = 0 ; i < Scene_objects.size(); i++)
         {
             Scene_objects[i].draw_edges();
+        }
+    }
+
+    void set_shader_program_for_objects(QGLShaderProgram *program)
+    {
+        for(int i = chain_links_n; i < Scene_objects.size(); i++)
+        {
+            Scene_objects[i].setshaderprog(program);
         }
     }
 

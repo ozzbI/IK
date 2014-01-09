@@ -3,6 +3,8 @@
 
 #include <QDialog>
 #include <kinematic_chain.h>
+#include <scene.h>
+
 namespace Ui {
 class joint_choise;
 }
@@ -15,6 +17,7 @@ public:
     explicit joint_choise(QWidget *parent = 0);
     ~joint_choise();
     void set_kc(kinematic_chain* nkc,int ni);
+    void set_scene(Scene *sc);
 signals:
     void set_max_link();
 private slots:
@@ -27,7 +30,8 @@ private slots:
 private:
     Ui::joint_choise *ui;
     int i;
-    kinematic_chain* kc;
+    kinematic_chain *kc;
+    Scene *scene;
 };
 
 #endif // JOINT_CHOISE_H

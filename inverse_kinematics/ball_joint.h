@@ -73,46 +73,46 @@ public:
             if(id!=0)
             {
                 temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
-                rot_qt = parent->global_transform*local_transform; //оставить только это в if
-                temp = rot_qt*temp*rot_qt.inverse();
+                rot_qt = parent->global_transform * local_transform; //оставить только это в if
+                temp = rot_qt * temp * rot_qt.inverse();
                 par_dir = Vector3d(temp.x(),temp.y(),temp.z());
             }
             else
             {
                 temp = Quaterniond(0,par_dir.x(),par_dir.y(),par_dir.z());
                 rot_qt = local_transform;
-                temp = rot_qt*temp*rot_qt.inverse();
+                temp = rot_qt * temp * rot_qt.inverse();
                 par_dir = Vector3d(temp.x(),temp.y(),temp.z());
             }
 
-            dir_par_dir_angle=angle(dir,par_dir)-joint_elastic_angle;
+            dir_par_dir_angle = angle(dir,par_dir) - joint_elastic_angle;
 
-            if(dir_par_dir_angle>0)
+            if(dir_par_dir_angle > 0)
             {
                 // !!! не учтено K^2
                 elastic_Force = projection(par_dir,dir);
                 elastic_Force.normalize();
-                elastic_Force*=dir_par_dir_angle*joint_elastic_K;
+                elastic_Force *= dir_par_dir_angle*joint_elastic_K;
             }
         }
 
-        ret_Force=projection(dir,Force);
-        rot_vel=Force-ret_Force;
-        Force_loss=rot_vel*joint_Frict_K;
-        rot_vel-=Force_loss;
+        ret_Force = projection(dir,Force);
+        rot_vel = Force-ret_Force;
+        Force_loss = rot_vel * joint_Frict_K;
+        rot_vel -= Force_loss;
 
-        rot_vel+=elastic_Force;
+        rot_vel += elastic_Force;
 
         //qDebug("rot_vel: %f, %f, %f",rot_vel.x(),rot_vel.y(),rot_vel.z());
-        rot_axis=dir.cross(rot_vel);
+        rot_axis = dir.cross(rot_vel);
 
         //обработка слайдера
-        if (telescopic)ret_Force=proc_slider(ret_Force, global_elastic);
+        if (telescopic)ret_Force = proc_slider(ret_Force, global_elastic);
 
 
         if(!(rot_axis.x()||rot_axis.y()||rot_axis.z()))
         {
-            if(ret_Force.dot(dir)<0&&rand_ax)
+            if(ret_Force.dot(dir) < 0 && rand_ax)
             {
                 Vector3d rand_axis;
                 srand(time(0));

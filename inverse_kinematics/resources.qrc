@@ -2,8 +2,22 @@
     <qresource prefix="/shaders">
         <file>frag_shader.frag</file>
         <file>vert_shader.vert</file>
+        <file>fullscreen_texture.frag</file>
+        <file>fullscreen_texture.vert</file>
+        <file>ssao_blur.frag</file>
+        <file>ssao_build_normal_buffer.frag</file>
+        <file>ssao_build_pos_buffer.frag</file>
+        <file>ssao_build_shaded_texture.frag</file>
+        <file>ssao_build_shaded_texture.vert</file>
+        <file>ssao_build_normal_buffer.vert</file>
+        <file>ssao_build_pos_buffer.vert</file>
+        <file>ssao_blur.vert</file>
+        <file>fullscreen_texture_2D.frag</file>
+        <file>ssao_blur_1.frag</file>
+        <file>ssao_blur_1.vert</file>
     </qresource>
     <qresource prefix="/textures">
         <file>rot_texture.jpg</file>
+        <file>tron.jpg</file>
     </qresource>
 </RCC>

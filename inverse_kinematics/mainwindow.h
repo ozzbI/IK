@@ -73,8 +73,6 @@ private slots:
     //menu
     void createActions();
     void createMenus();
-
-
 };
 
 #endif // MAINWINDOW_H

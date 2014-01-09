@@ -13,6 +13,7 @@ public:
 
   OctreeNode();
 
+
   inline OctreeNode*& parent() { return m_parent; }
   inline QVector<OctreeNodePtr>& children() { return m_children; }
   inline QVector<polygon*> &polys() { return m_polys; }

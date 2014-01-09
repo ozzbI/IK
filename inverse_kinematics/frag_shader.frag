@@ -17,9 +17,9 @@ void main(void)
         vec4 color;
         vec4 vec_to_light = light_pos-pos;
         vec_to_light.w = 0;
-        float lcos=dot(normalize(vec_to_light),normal_for_fs);
+        float lcos = dot(normalize(vec_to_light),normal_for_fs);
         if(lcos<0) lcos = 0;
-        if(without_texture==1) color = vec4(1,1,1,1);
+        if(without_texture == 1) color = vec4(1,1,1,1);
         else color = texture2D(texture, texc.st);
         gl_FragDepth = gl_FragCoord.z;
 

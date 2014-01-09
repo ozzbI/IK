@@ -115,24 +115,24 @@ public:
         if(global_elastic && slider_elastic)
         {
            double L;
-           L=length-min_length-slider_elastic_L;
+           L = length - min_length-slider_elastic_L;
 
-           if(L>0) elastic_F=-dir*(slider_elastic_K*L+slider_elastic_K_2*L);
+           if(L > 0) elastic_F =- dir*(slider_elastic_K*L + slider_elastic_K_2*L);
         }
 
-        slider_Force+=elastic_F; //силы упругости
+        slider_Force += elastic_F; //силы упругости
 
-        if(Force.dot(dir)>0&&length==max_length)
+        if(Force.dot(dir) > 0 && length == max_length)
         {
             return Force;
         }
-        if(Force.dot(dir)<0&&length==min_length)
+        if(Force.dot(dir) < 0 && length == min_length)
         {
             return Force;
         }
 
-        slider_Force+=Force*slider_Frict_K;
-        return Force*(1-slider_Frict_K);
+        slider_Force += Force * slider_Frict_K;
+        return Force * ( 1 - slider_Frict_K ) - elastic_F;
     }
 
 

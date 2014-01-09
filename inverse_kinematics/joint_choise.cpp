@@ -1,4 +1,4 @@
-#include "joint_choise.h"
+ï»¿#include "joint_choise.h"
 #include "ui_joint_choise.h"
 
 joint_choise::joint_choise(QWidget *parent) :
@@ -6,7 +6,7 @@ joint_choise::joint_choise(QWidget *parent) :
     ui(new Ui::joint_choise)
 {
     ui->setupUi(this);
-    setWindowTitle(tr("Âûáåðèòå òèï øàðíèðà"));
+    setWindowTitle(tr("Ð’Ñ‹Ð±ÐµÑ€Ð¸Ñ‚Ðµ Ñ‚Ð¸Ð¿ ÑˆÐ°Ñ€Ð½Ð¸Ñ€Ð°"));
     //setModal(true);
 }
 void joint_choise::set_kc(kinematic_chain* nkc,int ni)
@@ -24,6 +24,9 @@ void joint_choise::on_ball_clicked()
 {
     kc->add_link_to_middle(1,Vector3d(0,0,1),2,i,0,0,0);
     set_max_link();
+
+    scene->update_IK_Chain_objects(kc);
+
     delete this;
 }
 
@@ -31,6 +34,9 @@ void joint_choise::on_hinge1_clicked()
 {
     kc->add_link_to_middle(2,Vector3d(0,0,1),2,i,0,0,0);
     set_max_link();
+
+    scene->update_IK_Chain_objects(kc);
+
     delete this;
 }
 
@@ -38,5 +44,13 @@ void joint_choise::on_hinge2_clicked()
 {
     kc->add_link_to_middle(3,Vector3d(0,0,1),2,i,0,0,0);
     set_max_link();
+
+    scene->update_IK_Chain_objects(kc);
+
     delete this;
+}
+
+void joint_choise::set_scene(Scene *sc)
+{
+    scene = sc;
 }

@@ -54,11 +54,19 @@ FORMS    += mainwindow.ui \
 OTHER_FILES += \
     frag_shader.frag \
     vert_shader.vert \
-    ssao_build_buffer.vert \
-    ssao_build_buffer.frag \
     ssao_build_shaded_texture.vert \
     ssao_build_shaded_texture.frag \
-    ssao_blur.frag
+    ssao_blur.frag \
+    ssao_build_normal_buffer.frag \
+    ssao_build_pos_buffer.frag \
+    fullscreen_texture.vert \
+    fullscreen_texture.frag \
+    ssao_blur.vert \
+    ssao_build_normal_buffer.vert \
+    ssao_build_pos_buffer.vert \
+    fullscreen_texture_2D.frag \
+    ssao_blur_1.vert \
+    ssao_blur_1.frag
 
 RESOURCES += \
     resources.qrc

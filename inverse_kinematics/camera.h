@@ -26,7 +26,7 @@ public:
         void getViewMatrix(QMatrix4x4 *V);
         void setCameraType(CameraType cameraType);
         void getPosition(Vector3d* pos);
-        void setPosition(Vector3d* pos);
+        void setPosition(Vector3d pos);
 
         void getRight(Vector3d* right);
         void getUp(Vector3d* up);

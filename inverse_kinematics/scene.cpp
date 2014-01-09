@@ -1,4 +1,4 @@
-#include "scene.h"
+п»ї#include "scene.h"
 
 Scene::Scene(QGLShaderProgram *program)
 {
@@ -72,7 +72,7 @@ void Scene::add_object(QVector<QVector4D> &vertices, QVector<QVector4D> &normals
         Scene_objects[size].texCoords.push_back(texCoords[i]);
     }
 
-    //добавление ребер (только для кубов , если переданная геметрия не соответсвует кубу то :( )
+    //РґРѕР±Р°РІР»РµРЅРёРµ СЂРµР±РµСЂ (С‚РѕР»СЊРєРѕ РґР»СЏ РєСѓР±РѕРІ , РµСЃР»Рё РїРµСЂРµРґР°РЅРЅР°СЏ РіРµРјРµС‚СЂРёСЏ РЅРµ СЃРѕРѕС‚РІРµС‚СЃРІСѓРµС‚ РєСѓР±Сѓ С‚Рѕ :( )
     edge e;
 
     e.A = QVector3D(-1.0, -1.0, 1.0) * 0.5; e.B = QVector3D(1.0, -1.0, 1.0) * 0.5;
@@ -133,25 +133,33 @@ void Scene::add_object(QVector<QVector4D> &vertices, QVector<QVector4D> &normals
 
 void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
 {
-    /* при удалении/вставке звеньев  */
+    /* РїСЂРё СѓРґР°Р»РµРЅРёРё/РІСЃС‚Р°РІРєРµ Р·РІРµРЅСЊРµРІ  */
 
+    bool not_empty = false;
 
     box b(1);
     box b0(2);
 
     IKChain = Chain;
 
+    IKChain->collision = false;
+
+    if(chain_links_n != 0) //РµСЃР»Рё С†РµРїСЊ СѓР¶Рµ Р·Р°РґР°РІР°Р»Р°СЃСЊ
+    {
+        Scene_objects.remove(0, chain_links_n);
+        not_empty = true;
+    }
 
     chain_links_n = IKChain->links.size();
 
     int i,j;
 
-    for(j = 0; j < IKChain->links.size() ;j++)
+    for(j = IKChain->links.size() - 1; j >= 0; j--)
     {
 
-        int size = Scene_objects.size();
+        int size = 0; // need to refact
 
-        Scene_objects.push_back( *(new figure()) );
+        Scene_objects.push_front( *(new figure()) );
 
 
         if(j == chain_links_n - 1 )
@@ -168,10 +176,11 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
                 Scene_objects[size].vertices.push_back( b.vertices[i]);
             }
         }
+
         Scene_objects[size].program = scene_program;
 
 
-        //добавление ребер (только для кубов , если переданная геметрия не соответсвует кубу то :( )
+        //РґРѕР±Р°РІР»РµРЅРёРµ СЂРµР±РµСЂ (С‚РѕР»СЊРєРѕ РґР»СЏ РєСѓР±РѕРІ , РµСЃР»Рё РїРµСЂРµРґР°РЅРЅР°СЏ РіРµРјРµС‚СЂРёСЏ РЅРµ СЃРѕРѕС‚РІРµС‚СЃРІСѓРµС‚ РєСѓР±Сѓ С‚Рѕ :( )
         edge e;
 
         e.A = QVector3D(-1.0, -1.0, 1.0) * 0.5; e.B = QVector3D(1.0, -1.0, 1.0) * 0.5;
@@ -187,8 +196,6 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
         Scene_objects[size].edges_ref.push_back(e);
 
 
-
-
         e.A = QVector3D(-1.0, -1.0, -1.0) * 0.5; e.B = QVector3D(1.0, -1.0, -1.0) * 0.5;
         Scene_objects[size].edges_ref.push_back(e);
 
@@ -200,7 +207,6 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
 
         e.A = QVector3D(-1.0, 1.0, -1.0) * 0.5; e.B = QVector3D(-1.0, -1.0, -1.0) * 0.5;
         Scene_objects[size].edges_ref.push_back(e);
-
 
 
         e.A = QVector3D(-1.0, -1.0, -1.0) * 0.5; e.B = QVector3D(-1.0, -1.0, 1.0) * 0.5;
@@ -220,16 +226,21 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
             Scene_objects[size].edges.push_back(e);
         }
 
-
         //edges end
     }
 
-    build_chain_vertices_cash();
+    if(!not_empty)
+        build_chain_vertices_cash();
+    else
+        rebuild_chain_vertices_cash();
+
+    scene_octree->cleanup();
+    build_octree(100.0, false);
 }
 
 void Scene::recalc_IK_chain_model()
 {
-    /* каждый кадр*/
+    /* РєР°Р¶РґС‹Р№ РєР°РґСЂ*/
 
     QMatrix4x4 box_shift_mat;
     box_shift_mat.translate(0,0,-0.5);
@@ -288,12 +299,14 @@ void Scene::rebuild_chain_vertices_cash()
 
 bool Scene::detect_all_collisions()
 {
+    bool res = false;
 
     emit dc_start_process();
 
     for(int i = 0; i < chain_links_n; i++)
     {
-        collision_detect_octree(i, Scene_objects);
+        res = collision_detect_octree(i, Scene_objects);
+        if(res) break;
     }
 
 
@@ -314,7 +327,7 @@ bool Scene::detect_all_collisions()
 
 
     dc_mutex.lock();
-    for (int i = 0 ; i < intersect_points.size(); i++)
+    /*for (int i = 0 ; i < intersect_points.size(); i++)
     {
         //emit draw_collision_box(intersect_points[i]);
 
@@ -326,12 +339,20 @@ bool Scene::detect_all_collisions()
 
         b1->model=matr;
         b1->draw();
+    }*/
+
+    if(!res)
+    {
+        if(intersect_points.size() > 0)
+            res = true;
     }
 
     intersect_points.clear();
     dc_mutex.unlock();
 
     emit lock_dc_mutex();
+
+    return res;
 
     /*for(int c = chain_links_n; c < Scene_objects.size();c++)
     {
@@ -367,8 +388,8 @@ bool Scene::collision_detect(int part_id, QVector<figure> &figures)
                 {
                     if(v == figures[part_id].polys[p].vertices.size() - 1)
                     {
-                        p1 = figures[part_id].polys[p].vertices[v];// надобы вынести
-                        p2 = figures[part_id].polys[p].vertices[0];// из цикла
+                        p1 = figures[part_id].polys[p].vertices[v];// РЅР°РґРѕР±С‹ РІС‹РЅРµСЃС‚Рё
+                        p2 = figures[part_id].polys[p].vertices[0];// РёР· С†РёРєР»Р°
                         pa = figures[c].polys[i].vertices[0];
                         pb = figures[c].polys[i].vertices[1];
                         pc = figures[c].polys[i].vertices[2];
@@ -569,7 +590,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
 
             //octree
 
-            //определить ноду в которой находиться p1 и p2
+            //РѕРїСЂРµРґРµР»РёС‚СЊ РЅРѕРґСѓ РІ РєРѕС‚РѕСЂРѕР№ РЅР°С…РѕРґРёС‚СЊСЃСЏ p1 Рё p2
 
             OctreeNode *current_node = scene_octree->getRoot();
 
@@ -595,7 +616,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
                         k <= current_child_node->maxBorder.z() && k >= current_child_node->minBorder.z() )
                       hit_flag++ ;
 
-                    //p2 можно поставить if если hit_flag < 1
+                    //p2 РјРѕР¶РЅРѕ РїРѕСЃС‚Р°РІРёС‚СЊ if РµСЃР»Рё hit_flag < 1
                     i = p2.x();
                     j = p2.y();
                     k = p2.z();
@@ -608,7 +629,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
                     if(hit_flag == 2)
                     {
 
-                        for( int i = 0; i < current_node->polys().size(); i++ )//проверка полигонов в текущей ноде
+                        for( int i = 0; i < current_node->polys().size(); i++ )//РїСЂРѕРІРµСЂРєР° РїРѕР»РёРіРѕРЅРѕРІ РІ С‚РµРєСѓС‰РµР№ РЅРѕРґРµ
                         {
                             //QVector3D pa,pb,pc;
 
@@ -628,10 +649,10 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
                                 b1->model=matr;
                                 b1->draw();*/
 
-                                draw_collision_box(inters_point);
+                                //draw_collision_box(inters_point);
 
                                 //qDebug("collision");
-                                //return true;
+                                return true;
                             }
                         }
 
@@ -655,7 +676,8 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
 
             }
 
-            octree_traverse(p1, p2, *current_node, inters_point);
+            if (octree_traverse(p1, p2, *current_node, inters_point))
+                return true;
 
             // octree
         //} //edges
@@ -674,7 +696,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
 
 bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point)
 {
-    for( int i = 0; i < node.polys().size();i++ )//проверка полигонов в ноде
+    for( int i = 0; i < node.polys().size();i++ )//РїСЂРѕРІРµСЂРєР° РїРѕР»РёРіРѕРЅРѕРІ РІ РЅРѕРґРµ
     {
         QVector3D pa,pb,pc;
 
@@ -685,21 +707,21 @@ bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVec
         if(poly_intersect(p1,p2,pa,pb,pc,inters_point))
         {
 
-            QMatrix4x4 matr;
+            /*QMatrix4x4 matr;
 
             matr.translate(inters_point);
 
             matr.scale(0.1);
 
             b1->model=matr;
-            b1->draw();
+            b1->draw();*/
             //qDebug("collision");
-            //return true;
+            return true;
         }
     }
 
 
-    for( int i = 0; i < node.children().size(); i++ ) // проверка потомков ноды
+    for( int i = 0; i < node.children().size(); i++ ) // РїСЂРѕРІРµСЂРєР° РїРѕС‚РѕРјРєРѕРІ РЅРѕРґС‹
     {
         if(octree_traverse(p1, p2, *node.children()[i], inters_point ))
             return true;
@@ -803,16 +825,16 @@ bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure
             if(poly_intersect(p1,p2,pa,pb,pc,inters_point))
             {
 
-                QMatrix4x4 matr;
+                /*QMatrix4x4 matr;
 
                 matr.translate(inters_point);
 
                 matr.scale(0.1);
 
                 b1->model=matr;
-                b1->draw();
+                b1->draw();*/
                 //qDebug("collision");
-                //return true;
+                return true;
             }
             /*if(figures[test_part_id].polys[i].vertices.size() == 4)
             {
@@ -878,7 +900,7 @@ bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure
                 if(hit_flag == 2)
                 {
 
-                    for( int i = 0; i < current_node->polys().size();i++ )//проверка полигонов в текущей ноде
+                    for( int i = 0; i < current_node->polys().size();i++ )//РїСЂРѕРІРµСЂРєР° РїРѕР»РёРіРѕРЅРѕРІ РІ С‚РµРєСѓС‰РµР№ РЅРѕРґРµ
                     {
                         QVector3D pa,pb,pc;
 
@@ -1017,16 +1039,24 @@ bool dc_Worker::process()
 
         }
 */
+    int res = false;
+
     for(int c = scene->chain_links_n; c < scene->Scene_objects.size(); c++)
+    {
+        for(int i = 0; i < scene->chain_links_n; i++)
         {
-            for(int i = 0; i < scene->chain_links_n; i++)
+            if(direct_collision_detect(c, i, scene->Scene_objects))
             {
-                direct_collision_detect(c, i, scene->Scene_objects);
+                res = true;
+                break;
             }
         }
 
+        if (res) break;
+    }
 
     scene->dc_mutex.unlock();
+    return res;
 }
 
 bool dc_Worker::direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures)
@@ -1057,6 +1087,7 @@ bool dc_Worker::direct_collision_detect(int part_id,int test_part_id, QVector<fi
             if(poly_intersect(p1,p2,pa,pb,pc,inters_point))
             {
                 scene->intersect_points.push_back(inters_point);
+                return true;
             }
             /*
             if(figures[test_part_id].polys[i].vertices.size() == 4)
@@ -1170,7 +1201,7 @@ bool dc_Worker::direct_collision_detect_octree(int part_id,int test_part_id, QVe
                 if(hit_flag == 2)
                 {
 
-                    for( int i = 0; i < current_node->polys().size();i++ )//проверка полигонов в текущей ноде
+                    for( int i = 0; i < current_node->polys().size();i++ )//РїСЂРѕРІРµСЂРєР° РїРѕР»РёРіРѕРЅРѕРІ РІ С‚РµРєСѓС‰РµР№ РЅРѕРґРµ
                     {
                         QVector3D pa,pb,pc;
 
@@ -1216,7 +1247,7 @@ bool dc_Worker::direct_collision_detect_octree(int part_id,int test_part_id, QVe
 
 bool dc_Worker::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point)
 {
-    for( int i = 0; i < node.polys().size();i++ )//проверка полигонов в ноде
+    for( int i = 0; i < node.polys().size();i++ )//РїСЂРѕРІРµСЂРєР° РїРѕР»РёРіРѕРЅРѕРІ РІ РЅРѕРґРµ
     {
         QVector3D pa,pb,pc;
 
@@ -1231,7 +1262,7 @@ bool dc_Worker::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, 
     }
 
 
-    for( int i = 0; i < node.children().size(); i++ ) // проверка потомков ноды
+    for( int i = 0; i < node.children().size(); i++ ) // РїСЂРѕРІРµСЂРєР° РїРѕС‚РѕРјРєРѕРІ РЅРѕРґС‹
     {
         if(octree_traverse(p1, p2, *node.children()[i], inters_point ))
             return true;

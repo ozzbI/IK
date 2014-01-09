@@ -1,4 +1,4 @@
-#include "redact_joint.h"
+ï»¿#include "redact_joint.h"
 #include "ui_redact_joint.h"
 
 redact_joint::redact_joint(QWidget *parent) :
@@ -13,7 +13,7 @@ void redact_joint::set_kc(kinematic_chain* nkc,int ni)
     i=ni;
     kc=nkc;
 
-    setWindowTitle(tr("Ðåäàêòèðîâàíèå çâåíà"));
+    setWindowTitle(tr("Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð·Ð²ÐµÐ½Ð°"));
 
     ui->len->setValue(kc->links[i]->length);
 
@@ -51,12 +51,12 @@ void redact_joint::set_kc(kinematic_chain* nkc,int ni)
     else ui->subt_cbox->setEnabled(false);
 
 
-    // ïàðàìåòðû óïðîóãîñòè äæîèíòà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ Ð´Ð¶Ð¾Ð¸Ð½Ñ‚Ð°
     ui->joint_elastic_checkbox->setChecked(kc->links[i]->joint_elastic);
     ui->joint_elastic_K->setValue(kc->links[i]->joint_elastic_K);
     ui->joint_elastic_angle->setValue(kc->links[i]->joint_elastic_angle);
 
-    // ïàðàìåòðû óïðîóãîñòè ñëàéäåðà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÐ»Ð°Ð¹Ð´ÐµÑ€Ð°
     ui->slider_elastic_checkbox->setChecked(kc->links[i]->slider_elastic);
     ui->slider_elastic_K->setValue(kc->links[i]->slider_elastic_K);
     ui->slider_elastic_L->setValue(kc->links[i]->slider_elastic_L);
@@ -74,53 +74,53 @@ void redact_joint::on_Ok_but_clicked()
 {
 
     kc->links[i]->length=ui->len->value();
-    if(ui->slider_box->checkState()==Qt::Checked)
+    if(ui->slider_box->checkState() == Qt::Checked)
     {
-        kc->links[i]->telescopic=true;
-        if(kc->links[i]->length>kc->links[i]->max_length)kc->links[i]->length=kc->links[i]->max_length;
-        if(kc->links[i]->length<kc->links[i]->min_length)kc->links[i]->length=kc->links[i]->min_length;
+        kc->links[i]->telescopic = true;
+        if(kc->links[i]->length>kc->links[i]->max_length) kc->links[i]->length=kc->links[i]->max_length;
+        if(kc->links[i]->length<kc->links[i]->min_length) kc->links[i]->length=kc->links[i]->min_length;
     }
-    else kc->links[i]->telescopic=false;
-    if(kc->links[i]->type==1)
+    else kc->links[i]->telescopic = false;
+    if(kc->links[i]->type == 1)
     {
         AngleAxisd aa(ui->ang1->value()*M_PI/180.0,Vector3d(0,0,-1));
-        if(kc->links[i]->aa_limiter.size()==0)kc->links[i]->aa_limiter.push_back(aa);
-        else if(kc->links[i]->aa_limiter.size()==1)
+        if(kc->links[i]->aa_limiter.size() == 0)kc->links[i]->aa_limiter.push_back(aa);
+        else if(kc->links[i]->aa_limiter.size() == 1)
         {
             kc->links[i]->aa_limiter.clear();
             kc->links[i]->aa_limiter.push_back(aa);
         }
     }
-    if(kc->links[i]->type==2)
+    if(kc->links[i]->type == 2)
     {
-        kc->links[i]->lim_ang[0]=ui->ang1->value()*M_PI/180.0;
-        kc->links[i]->lim_ang[1]=ui->ang2->value()*M_PI/180.0;
+        kc->links[i]->lim_ang[0]=ui->ang1->value() * M_PI/180.0;
+        kc->links[i]->lim_ang[1]=ui->ang2->value() * M_PI/180.0;
     }
 
-    kc->links[i]->joint_Frict_K=ui->joint_K->value();
-    kc->links[i]->slider_Frict_K=ui->slider_K->value();
+    kc->links[i]->joint_Frict_K = ui->joint_K->value();
+    kc->links[i]->slider_Frict_K = ui->slider_K->value();
 
-    kc->links[i]->min_length=ui->slider_min->value();
-    kc->links[i]->max_length=ui->slider_max->value();
+    kc->links[i]->min_length = ui->slider_min->value();
+    kc->links[i]->max_length = ui->slider_max->value();
 
-    if((kc->links[i]->type==2)&&(ui->subt_cbox->checkState()==Qt::Checked))
+    if( (kc->links[i]->type == 2) && (ui->subt_cbox->checkState() == Qt::Checked) )
     {
-        kc->links[i]->subtype=2;
-        kc->links[i]->global_transform=kc->links[i]->global_transform.Identity();
+        kc->links[i]->subtype = 2;
+        kc->links[i]->global_transform = kc->links[i]->global_transform.Identity();
     }
     else
     {
-        kc->links[i]->subtype=1;
-        kc->links[i]->global_transform=kc->links[i]->global_transform.Identity();
+        kc->links[i]->subtype = 1;
+        kc->links[i]->global_transform = kc->links[i]->global_transform.Identity();
     }
 
 
-    // ïàðàìåòðû óïðîóãîñòè äæîèíòà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ Ð´Ð¶Ð¾Ð¸Ð½Ñ‚Ð°
     kc->links[i]->joint_elastic = ui->joint_elastic_checkbox->isChecked();
     kc->links[i]->joint_elastic_K = ui->joint_elastic_K->value();
     kc->links[i]->joint_elastic_angle = ui->joint_elastic_angle->value()*M_PI/180.0;
 
-    // ïàðàìåòðû óïðîóãîñòè ñëàéäåðà
+    // Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑƒÐ¿Ñ€Ð¾ÑƒÐ³Ð¾ÑÑ‚Ð¸ ÑÐ»Ð°Ð¹Ð´ÐµÑ€Ð°
     kc->links[i]->slider_elastic = ui->slider_elastic_checkbox->isChecked();
     kc->links[i]->slider_elastic_K = ui->slider_elastic_K->value();
     kc->links[i]->slider_elastic_L = ui->slider_elastic_L->value();

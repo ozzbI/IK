@@ -1,4 +1,4 @@
- #ifndef KINEMATIC_CHAIN_H
+п»ї #ifndef KINEMATIC_CHAIN_H
 #define KINEMATIC_CHAIN_H
 
 #include <kchain_link.h>
@@ -25,7 +25,7 @@ private:
     cylinder cyl_ra;
     cylinder cyl_t2;
     sphere sph;
-    bool bone_disabling;//отключение поворота для кости если расстояние от эффекторра до цели меньше длины потомков
+    bool bone_disabling;//РѕС‚РєР»СЋС‡РµРЅРёРµ РїРѕРІРѕСЂРѕС‚Р° РґР»СЏ РєРѕСЃС‚Рё РµСЃР»Рё СЂР°СЃСЃС‚РѕСЏРЅРёРµ РѕС‚ СЌС„С„РµРєС‚РѕСЂСЂР° РґРѕ С†РµР»Рё РјРµРЅСЊС€Рµ РґР»РёРЅС‹ РїРѕС‚РѕРјРєРѕРІ
     bool Force_normalizing;
     bool rot_max_Force;
     int max_Force_id;
@@ -39,7 +39,17 @@ public:
     vector<hinge_joint,Eigen::aligned_allocator<hinge_joint> > hinge_joints;
     vector<hinge_ra,Eigen::aligned_allocator<hinge_ra> > hinge_ra_joints;
     vector<abstract_joint*> links;
-    //выбранное звено
+
+    //links backup for detect collision
+
+    vector<ball_joint,Eigen::aligned_allocator<ball_joint> > ball_joints_backup;
+    vector<hinge_joint,Eigen::aligned_allocator<hinge_joint> > hinge_joints_backup;
+    vector<hinge_ra,Eigen::aligned_allocator<hinge_ra> > hinge_ra_joints_backup;
+    vector<abstract_joint*> links_backup;
+
+    bool collision;
+
+    //РІС‹Р±СЂР°РЅРЅРѕРµ Р·РІРµРЅРѕ
     int chosen_link_id;
 
     class effector
@@ -62,18 +72,18 @@ public:
     void set_link_angles(int link_id,double yaw,double pitch, double roll);
     int get_size();
     void set_link_size(int link_id,double width,double height);
-    void refresh_links();//обновление масиива указателей на шариниры после добавления
-    void draw_chain();//основная ф-я отрисовки цепи
-    void add_effector(int joint_id,double K,Vector3d target);//добавление эффектора
+    void refresh_links();//РѕР±РЅРѕРІР»РµРЅРёРµ РјР°СЃРёРёРІР° СѓРєР°Р·Р°С‚РµР»РµР№ РЅР° С€Р°СЂРёРЅРёСЂС‹ РїРѕСЃР»Рµ РґРѕР±Р°РІР»РµРЅРёСЏ
+    void draw_chain();//РѕСЃРЅРѕРІРЅР°СЏ С„-СЏ РѕС‚СЂРёСЃРѕРІРєРё С†РµРїРё
+    void add_effector(int joint_id,double K,Vector3d target);//РґРѕР±Р°РІР»РµРЅРёРµ СЌС„С„РµРєС‚РѕСЂР°
     void del_link(int id);
     void change_link_type(int id,int type);
     void add_link_to_middle(int type,Vector3d in_pos,double in_lenght,int in_parent_id,double yaw,double pitch,double roll);
     void delete_effector(int joint_id);
-    Vector3d projection(const Vector3d& a,  const Vector3d& b);//проекйция b на ф
-    void Forces_calculation(double velocity);// расчёт сил действующих на шарниры
-    void rotation_step_calculate(double velocity);//поворот всех шарниров с учётом расчитанных сил (1 раз)
-    void rotation_cycle(int steps,double velocity);//цикл нескольких поворотов шарниров с пересчётом сил
-    void set_effector_target(int joint_id,Vector3d target);//установка цели для эффектора
+    Vector3d projection(const Vector3d& a,  const Vector3d& b);//РїСЂРѕРµРєР№С†РёСЏ b РЅР° С„
+    void Forces_calculation(double velocity);// СЂР°СЃС‡С‘С‚ СЃРёР» РґРµР№СЃС‚РІСѓСЋС‰РёС… РЅР° С€Р°СЂРЅРёСЂС‹
+    void rotation_step_calculate(double velocity);//РїРѕРІРѕСЂРѕС‚ РІСЃРµС… С€Р°СЂРЅРёСЂРѕРІ СЃ СѓС‡С‘С‚РѕРј СЂР°СЃС‡РёС‚Р°РЅРЅС‹С… СЃРёР» (1 СЂР°Р·)
+    void rotation_cycle(int steps,double velocity);//С†РёРєР» РЅРµСЃРєРѕР»СЊРєРёС… РїРѕРІРѕСЂРѕС‚РѕРІ С€Р°СЂРЅРёСЂРѕРІ СЃ РїРµСЂРµСЃС‡С‘С‚РѕРј СЃРёР»
+    void set_effector_target(int joint_id,Vector3d target);//СѓСЃС‚Р°РЅРѕРІРєР° С†РµР»Рё РґР»СЏ СЌС„С„РµРєС‚РѕСЂР°
     void refresh_bones_axis(int id);
     void set_joint_Frict(int id,double new_K);
     void set_rot_vel_K(int id,double new_K);
@@ -96,6 +106,32 @@ public:
     static double len(Vector3d& a)
     {
         return(sqrt(a.x()*a.x()+a.y()*a.y()+a.z()*a.z()));
+    }
+
+    void set_shader_prog(QGLShaderProgram *program)
+    {
+        link_box.setshaderprog(program);
+        cyl.setshaderprog(program);
+        cyl_ra.setshaderprog(program);
+        cyl_t2.setshaderprog(program);
+        sph.setshaderprog(program);
+    }
+
+    void backup_links()
+    {
+        if(!collision)
+        {
+            ball_joints_backup = ball_joints;
+            hinge_joints_backup = hinge_joints;
+            hinge_ra_joints_backup = hinge_ra_joints;
+        }
+    }
+
+    void restore_links()
+    {
+        ball_joints = ball_joints_backup;
+        hinge_joints = hinge_joints_backup;
+        hinge_ra_joints = hinge_ra_joints_backup;
     }
 };
 

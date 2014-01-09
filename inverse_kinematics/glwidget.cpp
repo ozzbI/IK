@@ -1,16 +1,14 @@
-#include "glwidget.h"
+п»ї#include "glwidget.h"
 //#include <QtGui>
-
-
 
 
 GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     : QGLWidget(parent, shareWidget)
 {
- /*   QGLFormat frmt; // создать формат по умолчанию
-       frmt.setSampleBuffers(true); // задать простую буферизацию
+ /*   QGLFormat frmt; // СЃРѕР·РґР°С‚СЊ С„РѕСЂРјР°С‚ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+       frmt.setSampleBuffers(true); // Р·Р°РґР°С‚СЊ РїСЂРѕСЃС‚СѓСЋ Р±СѓС„РµСЂРёР·Р°С†РёСЋ
        frmt.setSamples(4);
-       setFormat(frmt); // установить формат в контекст*/
+       setFormat(frmt); // СѓСЃС‚Р°РЅРѕРІРёС‚СЊ С„РѕСЂРјР°С‚ РІ РєРѕРЅС‚РµРєСЃС‚*/
 
     QGLContext *con;
     QGLFormat fm;
@@ -39,10 +37,11 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     program = 0;
 
     timer = new QTimer(this);
+    timer->setTimerType(Qt::PreciseTimer);
     connect(timer, SIGNAL(timeout()), this, SLOT(update_screen()));
     timer->start(20);
 
-    cam.setPosition(&Vector3d(0,0,10));
+    cam.setPosition(Vector3d(0,0,10));
 
     light_pos=QVector4D(0,20,0,0);
     b1 =new box();
@@ -66,7 +65,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     b2->model.translate(2,1,2);
 
 
-    KChain.set_Force_normalizing(false);
+    KChain.set_Force_normalizing(true);
     //test chain
     KChain.enable_bone_disabling(false);
 
@@ -438,7 +437,31 @@ KChain.add_effector(5,1,target_for_effector);
 // FBO init
 
     makeCurrent();
-    fbo = new QGLFramebufferObject(512, 512);
+    ssao_fbo_normal = new QOpenGLFramebufferObject(512, 512);
+    ssao_fbo_pos = new QOpenGLFramebufferObject(512, 512);
+    ssao_fbo_blur = new QOpenGLFramebufferObject(512, 512);
+    ssao_fbo_shaded_texture = new QOpenGLFramebufferObject(512, 512);
+    ssao_fbo_blur_1 = new QOpenGLFramebufferObject(512, 512);
+
+    shadows_fbo_light = new QOpenGLFramebufferObject(512, 512);
+    shadows_fbo_shaded_texture = new QOpenGLFramebufferObject(512, 512);
+    shadows_fbo_blur = new QOpenGLFramebufferObject(512, 512);
+
+
+    main_scene_fbo = new QOpenGLFramebufferObject(512, 512);
+    main_scene_fbo_sampled = new QOpenGLFramebufferObject(512, 512);
+
+
+    //plane geometry
+    scren_plane_vertex.push_back(QVector4D(-1.0, -1.0, -1.0, 1.0));
+    scren_plane_vertex.push_back(QVector4D(1.0, -1.0, -1.0, 1.0));
+    scren_plane_vertex.push_back(QVector4D(1.0, 1.0, -1.0, 1.0));
+    scren_plane_vertex.push_back(QVector4D(-1.0, 1.0, -1.0, 1.0));
+
+    scren_plane_tex_coord.push_back(QVector2D(1.0, 0.0));
+    scren_plane_tex_coord.push_back(QVector2D(0.0, 0.0));
+    scren_plane_tex_coord.push_back(QVector2D(0.0, 1.0));
+    scren_plane_tex_coord.push_back(QVector2D(1.0, 1.0));
 }
 
 GLWidget::~GLWidget()
@@ -459,9 +482,10 @@ void GLWidget::initializeGL()
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    // glDisable(GL_CULL_FACE);
-    glEnable(GL_TEXTURE_2D);
+    //glDisable(GL_CULL_FACE);
 
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_TEXTURE_RECTANGLE);
 
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -471,11 +495,184 @@ void GLWidget::initializeGL()
     #define PROGRAM_TEXCOORD_ATTRIBUTE 1
     #define PROGRAM_NORMAL_ATTRIBUTE 2
 
-    QGLShader *vshader = new QGLShader(QGLShader::Vertex, this);
+    QGLShader *vshader;
+    QGLShader *fshader;
+
+
+    // Fullscreen texture shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/fullscreen_texture.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/fullscreen_texture.frag"));
+
+    fullscreen_texture_program = new QGLShaderProgram(this);
+    fullscreen_texture_program->addShader(vshader);
+    fullscreen_texture_program->addShader(fshader);
+    fullscreen_texture_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    fullscreen_texture_program->bindAttributeLocation("MultiTexCoord0", PROGRAM_TEXCOORD_ATTRIBUTE);
+    fullscreen_texture_program->link();
+
+    fullscreen_texture_program->bind();
+    fullscreen_texture_program->setUniformValue("Texture0", 0);
+    fullscreen_texture_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+    fullscreen_texture_program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+
+    fullscreen_texture_program->release();
+
+    // Fullscreen texture shader program end -----------------
+
+    // Fullscreen texture 2D shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/fullscreen_texture.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/fullscreen_texture_2D.frag"));
+
+    fullscreen_texture_program_2D = new QGLShaderProgram(this);
+    fullscreen_texture_program_2D->addShader(vshader);
+    fullscreen_texture_program_2D->addShader(fshader);
+    fullscreen_texture_program_2D->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    fullscreen_texture_program_2D->bindAttributeLocation("MultiTexCoord0", PROGRAM_TEXCOORD_ATTRIBUTE);
+    fullscreen_texture_program_2D->link();
+
+    fullscreen_texture_program_2D->bind();
+    fullscreen_texture_program_2D->setUniformValue("Texture0", 0);
+    fullscreen_texture_program_2D->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+    fullscreen_texture_program_2D->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+
+    fullscreen_texture_program_2D->release();
+
+    // Fullscreen texture 2D shader program end -----------------
+
+    // ssao_normal shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_normal_buffer.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_normal_buffer.frag"));
+
+    ssao_build_norm_program = new QGLShaderProgram(this);
+    ssao_build_norm_program->addShader(vshader);
+    ssao_build_norm_program->addShader(fshader);
+    ssao_build_norm_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_build_norm_program->bindAttributeLocation("normal", PROGRAM_NORMAL_ATTRIBUTE);
+    ssao_build_norm_program->link();
+
+
+    ssao_build_norm_program->bind();
+    ssao_build_norm_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_build_norm_program->enableAttributeArray(PROGRAM_NORMAL_ATTRIBUTE);
+
+    // ssao_normal shader program end ------------------------
+
+    // ssao_pos shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_pos_buffer.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_pos_buffer.frag"));
+
+    ssao_build_pos_program = new QGLShaderProgram(this);
+    ssao_build_pos_program->addShader(vshader);
+    ssao_build_pos_program->addShader(fshader);
+    ssao_build_pos_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_build_pos_program->link();
+
+    ssao_build_pos_program->bind();
+    ssao_build_pos_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+
+    // ssao_pos shader program end ---------------------------
+
+    // ssao_blur shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/ssao_blur.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/ssao_blur.frag"));
+
+    ssao_blur_program = new QGLShaderProgram(this);
+    ssao_blur_program->addShader(vshader);
+    ssao_blur_program->addShader(fshader);
+    ssao_blur_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_blur_program->link();
+
+    ssao_blur_program->bind();
+    ssao_blur_program->setUniformValue("aoMap", 0);
+    ssao_blur_program->setUniformValue("srcMap", 1);
+    ssao_blur_program->setUniformValue("ssao", 1);
+    ssao_blur_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+
+    // ssao_blur shader program end  -------------------------
+
+    // ssao_blur_1 shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/ssao_blur_1.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/ssao_blur_1.frag"));
+
+    ssao_blur_1_program = new QGLShaderProgram(this);
+    ssao_blur_1_program->addShader(vshader);
+    ssao_blur_1_program->addShader(fshader);
+    ssao_blur_1_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_blur_1_program->link();
+
+    ssao_blur_1_program->bind();
+    ssao_blur_1_program->setUniformValue("aoMap", 0);
+    ssao_blur_1_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+
+    // ssao_blur_1 shader program end  -------------------------
+
+    // ssao_shaded_texture shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_shaded_texture.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/ssao_build_shaded_texture.frag"));
+
+    ssao_build_shaded_texture_program = new QGLShaderProgram(this);
+    ssao_build_shaded_texture_program->addShader(vshader);
+    ssao_build_shaded_texture_program->addShader(fshader);
+    ssao_build_shaded_texture_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    ssao_build_shaded_texture_program->link();
+
+    ssao_build_shaded_texture_program->bind();
+    ssao_build_shaded_texture_program->setUniformValue("rotateMap", 0);
+    ssao_build_shaded_texture_program->setUniformValue("posMap", 1);
+    ssao_build_shaded_texture_program->setUniformValue("normalMap", 2);
+    ssao_build_shaded_texture_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+
+
+    // ssao_shaded_texture shader program end ----------------
+
+    // Main shader program
+    vshader = new QGLShader(QGLShader::Vertex, this);
 
     vshader->compileSourceFile(QLatin1String(":/shaders/vert_shader.vert"));
 
-    QGLShader *fshader = new QGLShader(QGLShader::Fragment, this);
+    fshader = new QGLShader(QGLShader::Fragment, this);
 
     fshader->compileSourceFile(QLatin1String(":/shaders/frag_shader.frag"));
 
@@ -486,6 +683,7 @@ void GLWidget::initializeGL()
     program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
     program->bindAttributeLocation("normal", PROGRAM_NORMAL_ATTRIBUTE);
     program->link();
+
 
     program->bind();
     program->setUniformValue("texture", 0);
@@ -499,6 +697,8 @@ void GLWidget::initializeGL()
     program->setUniformValue("light_pos",light_pos);
     program->setUniformValue("light_intensity", QVector4D(1.0,1.0,1.0,1));
     program->setUniformValue("without_texture",1);
+
+    // Main shader program link end --------------------------
 
     coordinate_axis.setshaderprog(program);
     //scene_box
@@ -622,6 +822,20 @@ void GLWidget::initializeGL()
     connect(scene,SIGNAL(draw_collision_box(QVector3D)),this,SLOT(draw_collision_box(QVector3D)));
     //connect(scene->dcThread,SIGNAL(draw_collision_box(QVector3D)),this,SLOT(draw_collision_box(QVector3D)),Qt::QueuedConnection);
 
+    //textures init
+    test_pic = bindTexture
+        (QPixmap(QLatin1String(":/textures/tron.jpg")), GL_TEXTURE_RECTANGLE);
+
+    ssao_rot_texture =  bindTexture
+            (QPixmap(QLatin1String(":/textures/rot_texture.jpg")), GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    ssao = true;
+
 }
 
 void GLWidget::paintGL()
@@ -631,12 +845,138 @@ void GLWidget::paintGL()
 
     cam.getViewMatrix(&v);
     v=v.transposed();
+
+    //KChain.rotation_cycle(10,0.01*move_vel);
+    scene->recalc_IK_chain_model();
+
+    if(!(stop_proc||main_stop)) //move chain and detect collision
+    {
+        KChain.backup_links();
+        KChain.rotation_cycle(10,0.01*move_vel);
+
+        //scene objects
+        scene->recalc_IK_chain_model();
+
+        if (scene->detect_all_collisions()) // collisions handler
+        {
+            KChain.restore_links();
+            scene->recalc_IK_chain_model();
+            KChain.collision = true;
+
+        }
+        else
+        {
+            if(KChain.collision)
+            {
+                //KChain.restore_links();
+                KChain.collision = false;
+            }
+        }
+    }
+
+    program->bind();
     program->setUniformValue("view_matrix", v);
 
-    if(!(stop_proc||main_stop))KChain.rotation_cycle(10,0.01*move_vel);
+    if(ssao)
+    {
+        ssao_build_norm_program->bind();
+        ssao_build_norm_program->setUniformValue("view_matrix", v);
+
+        ssao_build_pos_program->bind();
+        ssao_build_pos_program->setUniformValue("view_matrix", v);
+
+        //fbo
+
+       // program->release();
+
+
+        //normal buffer build
+
+        draw_scene_to_fbo(ssao_fbo_normal, ssao_build_norm_program);
+
+        /*ssao_build_norm_program->bind();
+
+        KChain.setshaderprog(ssao_build_norm_program);
+
+        scene->set_shader_program_for_objects(ssao_build_norm_program);
+
+        ssao_fbo_normal->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        KChain.draw_chain();
+        scene->draw_objects();
+
+        //СЂРёСЃСѓСЋС‚СЃСЏ С†РµР»Рё
+        sph1->setshaderprog(ssao_build_norm_program);
+        for(unsigned int i=0;i<KChain.effectors.size();i++)
+        {
+            QMatrix4x4 targ_mat;
+            targ_mat.translate(KChain.effectors[i].target.x(),KChain.effectors[i].target.y(),KChain.effectors[i].target.z());
+            sph1->model=targ_mat;
+            sph1->draw();
+        }
+        sph1->setshaderprog(program);
+
+        //scene_box
+        glCullFace(GL_FRONT);
+        b1->setshaderprog(ssao_build_norm_program);
+        b1->draw();
+        b1->setshaderprog(program);
+        glCullFace(GL_BACK);
+
+        ssao_fbo_normal->release();
+
+        scene->set_shader_program_for_objects(program);
+        KChain.setshaderprog(program);
+
+
+        ssao_build_norm_program->release();*/
+        //normal buffer build ------------------------
+
+        draw_scene_to_fbo(ssao_fbo_pos, ssao_build_pos_program);
+
+        //pos buffer build
+
+        /*ssao_build_pos_program->bind();
+
+        KChain.setshaderprog(ssao_build_pos_program);
+
+        scene->set_shader_program_for_objects(ssao_build_pos_program);
+
+        ssao_fbo_pos->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        KChain.draw_chain();
+        scene->draw_objects();
+        //scene_box
+
+        glCullFace(GL_FRONT);
+        b1->setshaderprog(ssao_build_pos_program);
+        b1->draw();
+        b1->setshaderprog(program);
+        glCullFace(GL_BACK);
+
+
+        ssao_fbo_pos->release();
+
+        scene->set_shader_program_for_objects(program);
+        KChain.setshaderprog(program);
+
+        ssao_build_pos_program->release();*/
+        //pos buffer build ------------------------
+    }
+
+    //----------main scene
+    program->bind();
+
+    main_scene_fbo_sampled->bind();
+
+    glClearColor(0.4f,0.4f,0.9f,1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     KChain.draw_chain();
 
-    //рисуются цели
+    //СЂРёСЃСѓСЋС‚СЃСЏ С†РµР»Рё
     for(unsigned int i=0;i<KChain.effectors.size();i++)
     {
         QMatrix4x4 targ_mat;
@@ -647,32 +987,37 @@ void GLWidget::paintGL()
 
 
 
-    /*///sphere trace test
-    glBegin(GL_LINES);
-    glColor3f(0,0,1);
-    glVertex3f(a.x(),a.y(),a.z());
-    glColor3f(0,0,1);
-    glVertex3f(b.x(),b.y(),b.z());
-    glEnd();*/
-
-    //scene objects
-
-    scene->recalc_IK_chain_model();
-
    // scene->build_octree(100.0, true);
 
     scene->draw_objects();
 
     //scene->draw_polys(); //debug
-   // scene->draw_edges();
-
-    scene->detect_all_collisions();
+    //scene->draw_edges(); //debug
 
     //scene_box
     glCullFace(GL_FRONT);
     b1->draw();
     glCullFace(GL_BACK);
-    //оси рисуются первыми или последними так как чистят z-буффер
+
+    main_scene_fbo_sampled->release();
+
+    QOpenGLFramebufferObject::blitFramebuffer(main_scene_fbo,main_scene_fbo_sampled);
+
+    if(ssao)
+    {
+        make_ssao_shaded_texture();
+        blur_ssao_shaded_texture();
+    }
+
+    combine_textures();
+
+
+    program->release();
+    draw_fullscreen_texture(ssao_fbo_blur->texture());
+    program->bind();
+
+
+    //РѕСЃРё СЂРёСЃСѓСЋС‚СЃСЏ РїРµСЂРІС‹РјРё РёР»Рё РїРѕСЃР»РµРґРЅРёРјРё С‚Р°Рє РєР°Рє С‡РёСЃС‚СЏС‚ z-Р±СѓС„С„РµСЂ
     coordinate_axis.draw(&cam,aspect_ratio);
 
 }
@@ -704,14 +1049,54 @@ void GLWidget::resizeGL(int width, int height)
     QMatrix4x4 new_perspective;
     p=new_perspective;
     p.perspective(view_angle,aspect_ratio,1,300);
+
+    ssao_build_shaded_texture_program->bind();
+    ssao_build_shaded_texture_program->setUniformValue("viewport_size", QVector2D(width, height));
+
+    program->bind();
     program->setUniformValue("proj_matrix", p);
 
-    //QGLFramebufferObjectFormat fbo_format;
+    ssao_build_norm_program->bind();
+    ssao_build_norm_program->setUniformValue("proj_matrix", p);
 
-    //fbo_format.setInternalTextureFormat(GL_RGBA32F);
+    ssao_build_pos_program->bind();
+    ssao_build_pos_program->setUniformValue("proj_matrix", p);
 
-    delete fbo;
-    fbo = new QGLFramebufferObject(width, height);
+    QOpenGLFramebufferObjectFormat fbo_format;
+
+    fbo_format.setInternalTextureFormat(GL_RGBA32F);
+
+    delete ssao_fbo_normal;
+    delete ssao_fbo_pos;
+    delete ssao_fbo_shaded_texture;
+    delete ssao_fbo_blur;
+
+    delete shadows_fbo_light;
+    delete shadows_fbo_shaded_texture;
+    delete shadows_fbo_blur ;
+
+
+    ssao_fbo_normal = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::Depth,
+                                               GL_TEXTURE_RECTANGLE, GL_RGBA32F );
+    ssao_fbo_pos = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::Depth,
+                                            GL_TEXTURE_RECTANGLE,GL_RGBA32F );
+    ssao_fbo_shaded_texture = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_RECTANGLE, GL_RGBA8);
+    ssao_fbo_blur = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_RECTANGLE, GL_RGBA8);
+    ssao_fbo_blur_1 = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_RECTANGLE, GL_RGBA8);
+
+    fbo_format.setInternalTextureFormat(GL_RGBA8);
+    fbo_format.setMipmap(false);
+    fbo_format.setSamples(4);
+    fbo_format.setAttachment(QOpenGLFramebufferObject::Depth);
+    fbo_format.setTextureTarget(GL_TEXTURE_RECTANGLE);
+
+    main_scene_fbo_sampled = new QOpenGLFramebufferObject(width, height, fbo_format);
+
+    main_scene_fbo = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::Depth, GL_TEXTURE_RECTANGLE, GL_RGBA8);
+
+    shadows_fbo_light = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA8);
+    shadows_fbo_shaded_texture = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA8);
+    shadows_fbo_blur = new QOpenGLFramebufferObject(width, height, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA8);
 
 }
 
@@ -724,7 +1109,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     lastPos = event->pos();
 
-    //трассировка сферы
+    //С‚СЂР°СЃСЃРёСЂРѕРІРєР° СЃС„РµСЂС‹
     if (event->buttons() & Qt::LeftButton)
     {
         QVector3D Qp,Qpos,C;
@@ -752,7 +1137,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         //b=Qpos+Qp*40;
         Qp.normalize();
 
-        if(sphere_intersect(Qpos,Qp,C,0.4)) //увеличил радиус расчётной сферы
+        if(sphere_intersect(Qpos,Qp,C,0.4)) //СѓРІРµР»РёС‡РёР» СЂР°РґРёСѓСЃ СЂР°СЃС‡С‘С‚РЅРѕР№ СЃС„РµСЂС‹
         {
             sph1->set_material(QVector4D(1.0,0.0,0.0,1.0));
             if(target_selected) move_target=true;
@@ -770,7 +1155,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     int dx = event->x() - lastPos.x();
     int dy = event->y() - lastPos.y();
-    //движение цели
+    //РґРІРёР¶РµРЅРёРµ С†РµР»Рё
     if(move_target)
     {
         if (event->buttons() & Qt::LeftButton)
@@ -802,14 +1187,14 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
             C=QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
 
-            if(ctrl_pressed)//плоскость перп камере
+            if(ctrl_pressed)//РїР»РѕСЃРєРѕСЃС‚СЊ РїРµСЂРї РєР°РјРµСЂРµ
             {
                 /*poly_intersect(Qpos,Qp,C+dir*10000
                            ,C-right*10000,C-dir*10000+right*10000
                            ,new_target);*/
                 new_target=C+dir*0.1*(double)dy;
             }
-            else//плоскость параллельная камере
+            else//РїР»РѕСЃРєРѕСЃС‚СЊ РїР°СЂР°Р»Р»РµР»СЊРЅР°СЏ РєР°РјРµСЂРµ
             {
                 poly_intersect(Qpos,Qp,C-right*10000-up*10000
                            ,C+right*10000,C+up*10000
@@ -874,3 +1259,283 @@ void GLWidget::draw_collision_box(QVector3D collision_point)
     collision_box->draw();
 }
 
+float GLWidget::poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point )
+{
+   QVector3D origin,direction,p0,p1,p2;
+   origin=(QVector3D)origin_in;
+   direction=(QVector3D)direction_in;
+   p0=(QVector3D)p0_in;
+   p1=(QVector3D)p1_in;
+   p2=(QVector3D)p2_in;
+
+   float result;
+
+  QVector3D e1 = p1 - p0;
+  QVector3D e2 = p2 - p0;
+
+  p0 = origin - p0;
+
+  QVector3D P = QVector3D::crossProduct( direction , e2 );
+
+  float  det =  QVector3D::dotProduct( P , e1 );
+
+  if( det == 0.0 )
+    return -1000000.0;
+
+  float u = QVector3D::dotProduct( P , p0 ) / det;
+
+  P = QVector3D::crossProduct( p0 , e1 );
+
+  float w = QVector3D::dotProduct( P , direction ) / det ;
+
+  if( u + w > 1 || w < 0 || u < 0 )
+    return 1000000.0;
+
+
+  result=QVector3D::dotProduct( P , e2 ) / det;
+  res_point=(QVector4D(origin+direction*result,1));
+  return result;
+
+}
+
+float GLWidget::poly_intersect( QVector3D origin, QVector3D direction, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point )
+{
+  float result;
+
+  QVector3D e1 = p1 - p0;
+  QVector3D e2 = p2 - p0;
+
+  p0 = origin - p0;
+
+  QVector3D P = QVector3D::crossProduct( direction , e2 );
+
+  float  det =  QVector3D::dotProduct( P , e1 );
+
+  if( det == 0.0 )
+    return -1000000.0;
+
+  float u = QVector3D::dotProduct( P , p0 ) / det;
+
+  P = QVector3D::crossProduct( p0 , e1 );
+
+  float w = QVector3D::dotProduct( P , direction ) / det ;
+
+  if( u + w > 1 || w < 0 || u < 0 )
+    return 1000000.0;
+
+
+  result=QVector3D::dotProduct( P , e2 ) / det;
+  res_point=origin+direction*result;
+  return result;
+
+}
+
+bool GLWidget::sphere_intersect(QVector3D origin_in, QVector3D direction_in, QVector3D sph_C,double sph_r)
+{
+    double D,C,B;
+
+    B = 2 * QVector3D::dotProduct(direction_in,origin_in - sph_C);
+    C = QVector3D::dotProduct(origin_in - sph_C,origin_in - sph_C)-sph_r * sph_r;
+    D = B*B - 4.0*C;
+    if (D < 0) return false;
+    else return true;
+}
+
+void GLWidget::draw_fullscreen_texture(GLuint texture, GLenum texture_type)
+{
+    if(texture_type == GL_TEXTURE_RECTANGLE)
+    {
+        fullscreen_texture_program->bind();
+
+        fullscreen_texture_program->setAttributeArray
+        (0, scren_plane_vertex.constData());
+        fullscreen_texture_program->setAttributeArray
+        (1, scren_plane_tex_coord.constData());
+
+        glFuncs->glActiveTexture(GL_TEXTURE0);
+        glBindTexture(texture_type, texture);
+        glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+        fullscreen_texture_program->release();
+    }
+    else if(texture_type == GL_TEXTURE_2D)
+    {
+        fullscreen_texture_program_2D->bind();
+
+        fullscreen_texture_program->setAttributeArray
+        (0, scren_plane_vertex.constData());
+        fullscreen_texture_program->setAttributeArray
+        (1, scren_plane_tex_coord.constData());
+
+        glFuncs->glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+        fullscreen_texture_program_2D->release();
+    }
+}
+
+void GLWidget::make_ssao_shaded_texture()
+{
+    ssao_build_shaded_texture_program->bind();
+
+    ssao_fbo_shaded_texture->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ssao_rot_texture);
+
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glFuncs->glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_pos->texture());
+
+    glFuncs->glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_normal->texture());
+
+
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+    ssao_fbo_shaded_texture->release();
+
+    ssao_build_shaded_texture_program->release();
+}
+
+void GLWidget::blur_ssao_shaded_texture()
+{
+    ssao_blur_1_program->bind();
+
+    ssao_fbo_blur_1->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_shaded_texture->texture());
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+    ssao_fbo_blur_1->release();
+
+    //2x
+
+    ssao_fbo_shaded_texture->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_blur_1->texture());
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+    ssao_fbo_shaded_texture->release();
+/*
+    //3x
+
+    ssao_fbo_blur_1->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_shaded_texture->texture());
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+    ssao_fbo_blur_1->release();
+
+    //4x
+
+    ssao_fbo_shaded_texture->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_blur_1->texture());
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+    */
+
+    ssao_fbo_shaded_texture->release();
+
+
+
+    ssao_blur_1_program->release();
+}
+
+void GLWidget::combine_textures()
+{
+    ssao_blur_program->bind();
+
+    ssao_fbo_blur->bind();
+
+    ssao_build_shaded_texture_program->setAttributeArray
+    (0, scren_plane_vertex.constData());
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_RECTANGLE, ssao_fbo_shaded_texture->texture());
+
+    glFuncs->glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_RECTANGLE, main_scene_fbo->texture());
+
+    //glBindTexture(GL_TEXTURE_RECTANGLE, texture);
+    glDrawArrays(GL_QUADS, 0, scren_plane_vertex.size());
+
+    ssao_fbo_blur->release();
+
+    ssao_blur_program->release();
+}
+
+void GLWidget::draw_scene_to_fbo(QOpenGLFramebufferObject *fbo, QGLShaderProgram *pass_program)
+{
+    pass_program->bind();
+
+    KChain.setshaderprog(pass_program);
+
+    scene->set_shader_program_for_objects(pass_program);
+
+    fbo->bind();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    KChain.draw_chain();
+    scene->draw_objects();
+
+    //СЂРёСЃСѓСЋС‚СЃСЏ С†РµР»Рё
+    sph1->setshaderprog(pass_program);
+    for(unsigned int i=0;i<KChain.effectors.size();i++)
+    {
+        QMatrix4x4 targ_mat;
+        targ_mat.translate(KChain.effectors[i].target.x(),KChain.effectors[i].target.y(),KChain.effectors[i].target.z());
+        sph1->model=targ_mat;
+        sph1->draw();
+    }
+    sph1->setshaderprog(program);
+
+    //scene_box
+    glCullFace(GL_FRONT);
+    b1->setshaderprog(pass_program);
+    b1->draw();
+    b1->setshaderprog(program);
+    glCullFace(GL_BACK);
+
+    fbo->release();
+
+    scene->set_shader_program_for_objects(program);
+    KChain.setshaderprog(program);
+
+
+    pass_program->release();
+}

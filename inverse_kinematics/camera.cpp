@@ -1,4 +1,4 @@
-#include "camera.h"
+﻿#include "camera.h"
 Camera::Camera()
 {
     _cameraType = AIRCRAFT;
@@ -31,9 +31,9 @@ void Camera::getPosition(Vector3d* pos)
     *pos = _pos;
 }
 
-void Camera::setPosition(Vector3d* pos)
+void Camera::setPosition(Vector3d pos)
 {
-    _pos = *pos;
+    _pos = pos;
 }
 
 void Camera::getRight(Vector3d* right)

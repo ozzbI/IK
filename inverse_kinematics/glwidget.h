@@ -1,5 +1,4 @@
-
-#ifndef GLWIDGET_H
+п»ї#ifndef GLWIDGET_H
 #define GLWIDGET_H
 
 #include <QtOpenGL>
@@ -46,7 +45,25 @@ public:
     bool stop_proc,main_stop;
     double move_vel;
 
-    QGLFramebufferObject* fbo;
+
+
+    QOpenGLFramebufferObject* ssao_fbo_normal;
+    QOpenGLFramebufferObject* ssao_fbo_pos;
+    QOpenGLFramebufferObject* ssao_fbo_shaded_texture;
+    QOpenGLFramebufferObject* ssao_fbo_blur;
+    QOpenGLFramebufferObject* ssao_fbo_blur_1;
+
+    QOpenGLFramebufferObject* shadows_fbo_light;
+    QOpenGLFramebufferObject* shadows_fbo_shaded_texture;
+    QOpenGLFramebufferObject* shadows_fbo_blur;
+
+    QOpenGLFramebufferObject* main_scene_fbo;
+    QOpenGLFramebufferObject* main_scene_fbo_sampled;
+
+    bool ssao;
+
+
+    QVector3D intersect_point;
 
 //for tests
     bool test_trigger;
@@ -69,88 +86,22 @@ public:
     {
         program->setUniformValue("light_pos",light_pos);
     }
-//временно тут
-    float poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point )
-    {
-       QVector3D origin,direction,p0,p1,p2;
-       origin=(QVector3D)origin_in;
-       direction=(QVector3D)direction_in;
-       p0=(QVector3D)p0_in;
-       p1=(QVector3D)p1_in;
-       p2=(QVector3D)p2_in;
 
-       float result;
+    float poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point );
 
-      QVector3D e1 = p1 - p0;
-      QVector3D e2 = p2 - p0;
+    float poly_intersect( QVector3D origin, QVector3D direction, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
 
-      p0 = origin - p0;
+    bool  sphere_intersect(QVector3D origin_in, QVector3D direction_in, QVector3D sph_C,double sph_r);
 
-      QVector3D P = QVector3D::crossProduct( direction , e2 );
+    void draw_fullscreen_texture(GLuint texture, GLenum texture_type = GL_TEXTURE_RECTANGLE);
 
-      float  det =  QVector3D::dotProduct( P , e1 );
+    void make_ssao_shaded_texture();
 
-      if( det == 0.0 )
-        return -1000000.0;
+    void blur_ssao_shaded_texture();
 
-      float u = QVector3D::dotProduct( P , p0 ) / det;
+    void combine_textures();
 
-      P = QVector3D::crossProduct( p0 , e1 );
-
-      float w = QVector3D::dotProduct( P , direction ) / det ;
-
-      if( u + w > 1 || w < 0 || u < 0 )
-        return 1000000.0;
-
-
-      result=QVector3D::dotProduct( P , e2 ) / det;
-      res_point=(QVector4D(origin+direction*result,1));
-      return result;
-
-    }
-
-    float poly_intersect( QVector3D origin, QVector3D direction, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point )
-    {
-      float result;
-
-      QVector3D e1 = p1 - p0;
-      QVector3D e2 = p2 - p0;
-
-      p0 = origin - p0;
-
-      QVector3D P = QVector3D::crossProduct( direction , e2 );
-
-      float  det =  QVector3D::dotProduct( P , e1 );
-
-      if( det == 0.0 )
-        return -1000000.0;
-
-      float u = QVector3D::dotProduct( P , p0 ) / det;
-
-      P = QVector3D::crossProduct( p0 , e1 );
-
-      float w = QVector3D::dotProduct( P , direction ) / det ;
-
-      if( u + w > 1 || w < 0 || u < 0 )
-        return 1000000.0;
-
-
-      result=QVector3D::dotProduct( P , e2 ) / det;
-      res_point=origin+direction*result;
-      return result;
-
-    }
-
-    bool  sphere_intersect(QVector3D origin_in, QVector3D direction_in, QVector3D sph_C,double sph_r)
-    {
-        double D,C,B;
-
-        B=2*QVector3D::dotProduct(direction_in,origin_in-sph_C);
-        C=QVector3D::dotProduct(origin_in-sph_C,origin_in-sph_C)-sph_r*sph_r;
-        D=B*B-4.0*C;
-        if (D<0) return false;
-        else return true;
-    }
+    void draw_scene_to_fbo(QOpenGLFramebufferObject *fbo, QGLShaderProgram *pass_program);
 
 //-----------------------------------------
 signals:
@@ -180,8 +131,22 @@ private:
     QColor clearColor;
     QPoint lastPos;
     GLuint textures[6];
-    GLuint planet_texture[3];
+
     QGLShaderProgram *program;
+
+    QGLShaderProgram *ssao_build_norm_program;
+    QGLShaderProgram *ssao_build_pos_program;
+    QGLShaderProgram *ssao_build_shaded_texture_program;
+    QGLShaderProgram *ssao_blur_program;
+    QGLShaderProgram *ssao_blur_1_program;
+
+    QGLShaderProgram *fullscreen_texture_program;
+    QGLShaderProgram *fullscreen_texture_program_2D;
+    GLuint test_pic;
+    GLuint ssao_rot_texture;
+
+    QVector<QVector4D> scren_plane_vertex;
+    QVector<QVector2D> scren_plane_tex_coord;
 
     qreal test_angle;
 
