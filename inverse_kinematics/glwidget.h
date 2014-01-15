@@ -12,6 +12,7 @@
 #include <sphere.h>
 #include <redact_joint.h>
 #include <scene.h>
+#include "cubemapfbo.h"
 
 
 /* MyGui Test*/
@@ -51,14 +52,16 @@ public:
     QOpenGLFramebufferObject* ssao_fbo_pos;
     QOpenGLFramebufferObject* ssao_fbo_shaded_texture;
     QOpenGLFramebufferObject* ssao_fbo_blur;
-    QOpenGLFramebufferObject* ssao_fbo_blur_1;
 
-    QOpenGLFramebufferObject* shadows_fbo_light;
-    QOpenGLFramebufferObject* shadows_fbo_shaded_texture;
-    QOpenGLFramebufferObject* shadows_fbo_blur;
+    QOpenGLFramebufferObject* upscaled_ssao_fbo;
+    QOpenGLFramebufferObject* blur_upscaled_ssao_fbo;
 
+    QOpenGLFramebufferObject* final_fbo;
     QOpenGLFramebufferObject* main_scene_fbo;
     QOpenGLFramebufferObject* main_scene_fbo_sampled;
+
+    CubeMapFBO* cube_fbo;
+    Camera light_cam;
 
     bool ssao;
 
@@ -97,7 +100,9 @@ public:
 
     void make_ssao_shaded_texture();
 
-    void blur_ssao_shaded_texture();
+    void blur_fbo(QOpenGLFramebufferObject *fbo_1, QOpenGLFramebufferObject *fbo_2, int passes);
+
+    void upsacle_interpolation(QOpenGLFramebufferObject *src, QOpenGLFramebufferObject *dest);
 
     void combine_textures();
 
@@ -137,11 +142,13 @@ private:
     QGLShaderProgram *ssao_build_norm_program;
     QGLShaderProgram *ssao_build_pos_program;
     QGLShaderProgram *ssao_build_shaded_texture_program;
+    QGLShaderProgram *combine_textures_program;
     QGLShaderProgram *ssao_blur_program;
-    QGLShaderProgram *ssao_blur_1_program;
+    QGLShaderProgram *upsacle_interpolation_program;
 
     QGLShaderProgram *fullscreen_texture_program;
     QGLShaderProgram *fullscreen_texture_program_2D;
+
     GLuint test_pic;
     GLuint ssao_rot_texture;
 

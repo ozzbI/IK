@@ -395,7 +395,7 @@ void MainWindow::on_opne_file_but_clicked()
         glw->KChain.hinge_joints.clear();
         glw->KChain.hinge_ra_joints.clear();
         glw->KChain.refresh_links();
-    glw->main_stop=true;
+        glw->main_stop=true;
         //load new chain
     do
     {
@@ -523,8 +523,10 @@ void MainWindow::on_opne_file_but_clicked()
     }
     while(true);
 
-    glw->main_stop=false;
-    glw->KChain.effectors[0].id=glw->KChain.links.size()-1;
+    glw->scene->update_IK_Chain_objects(&glw->KChain);
+
+    glw->main_stop = false;
+    glw->KChain.effectors[0].id = glw->KChain.links.size() - 1;
     ui->link->setMaximum(glw->KChain.links.size()-1);
     }
 

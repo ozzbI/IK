@@ -1,7 +1,5 @@
 <RCC>
     <qresource prefix="/shaders">
-        <file>frag_shader.frag</file>
-        <file>vert_shader.vert</file>
         <file>fullscreen_texture.frag</file>
         <file>fullscreen_texture.vert</file>
         <file>ssao_blur.frag</file>
@@ -13,11 +11,17 @@
         <file>ssao_build_pos_buffer.vert</file>
         <file>ssao_blur.vert</file>
         <file>fullscreen_texture_2D.frag</file>
-        <file>ssao_blur_1.frag</file>
-        <file>ssao_blur_1.vert</file>
+        <file>combine_textures.frag</file>
+        <file>combine_textures.vert</file>
+        <file>main_lightning_frag_shader.frag</file>
+        <file>main_lightning_frag_shader.vert</file>
+        <file>upscale_interpolation.frag</file>
+        <file>upscale_interpolation.vert</file>
     </qresource>
     <qresource prefix="/textures">
         <file>rot_texture.jpg</file>
         <file>tron.jpg</file>
+        <file>rot_texture.bmp</file>
+        <file>noise.png</file>
     </qresource>
 </RCC>

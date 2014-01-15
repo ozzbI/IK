@@ -91,6 +91,7 @@ public:
     void enable_telescopic(int id,bool state,double min_l,double max_l,double slider_Frict_K);
     void set_Force_normalizing(bool state);
     void childs_glob_trans_recalc(int start_link_id,Quaterniond &q,double velocity);
+    void glob_pos_recalc(int start_link_id, int parent_id);
     void set_subtype(int id,int state);
     void set_ret_Force_K(int id,double new_K);
     void set_aa_limiter(int id,double ang_ax,Vector3d a);

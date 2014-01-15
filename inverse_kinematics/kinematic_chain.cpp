@@ -10,18 +10,18 @@ kinematic_chain::kinematic_chain()
     cyl_t2.make_cylinder(1,1,20);;
     //cyl_t2.add_model.rotate(90,1,0,0);
 
-    link_box.set_material(QVector4D(1,1,1,0));
-    cyl.set_material(QVector4D(0.1,0.1,1.2,0));
-    cyl_ra.set_material(QVector4D(0.3,0.3,0.3,0));
-    cyl_t2.set_material(QVector4D(0.1,0.1,1.2,0));
-    sph.set_material(QVector4D(1.0,1.0,0.1,0));
-    bone_disabling=false;
-    Force_normalizing=true;
-    rot_max_Force=false;
-    max_Force_id=0;
+    link_box.set_material(QVector4D(1,1,1,1.0));
+    cyl.set_material(QVector4D(0.1,0.1,1.2,1.0));
+    cyl_ra.set_material(QVector4D(0.3,0.3,0.3,1.0));
+    cyl_t2.set_material(QVector4D(0.1,0.1,1.2,1.0));
+    sph.set_material(QVector4D(1.0,1.0,0.1,1.0));
+    bone_disabling = false;
+    Force_normalizing = true;
+    rot_max_Force = false;
+    max_Force_id = 0;
 
-    TARGET_ACTIVATED=1;
-    ELASTIC_GLOBAL=1;
+    TARGET_ACTIVATED = 1;
+    ELASTIC_GLOBAL = 1;
 
     collision = false;
 }
@@ -55,8 +55,8 @@ void kinematic_chain::draw_chain()
 
         link_box.model=translate_mat*rot_mat*scale_mat*box_shift_mat;
         //material
-        if(i==chosen_link_id)link_box.set_material(QVector4D(1,0,0,0));
-        else link_box.set_material(QVector4D(1,1,1,0));
+        if(i==chosen_link_id)link_box.set_material(QVector4D(1,0,0,1.0));
+        else link_box.set_material(QVector4D(1,1,1,1.0));
         link_box.draw();
 
         //постамент
@@ -72,19 +72,19 @@ void kinematic_chain::draw_chain()
             base_scale=identity;
             base_scale.scale(2,2,0.2);
             link_box.model=local_trans*base_trans*base_scale*box_shift_mat_2;
-            link_box.set_material(QVector4D(0.7,0.7,0.7,0.1));
+            link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
             link_box.draw();
 
             base_scale=identity;
             base_scale.scale(0.5,0.5,2.0);
             link_box.model=local_trans*base_scale*box_shift_mat_2;
-            link_box.set_material(QVector4D(0.7,0.7,0.7,0.7));
+            link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
             link_box.draw();
         }
         //рисуется основние елси кость телескопическая
         if(links[i]->telescopic)
         {
-            link_box.set_material(QVector4D(0.25,0.9,0.25,0));//цвет осноывния телескопического звена
+            link_box.set_material(QVector4D(0.25,0.9,0.25,1.0));//цвет осноывния телескопического звена
             scale_mat=identity;
             scale_mat.scale(links[i]->width+0.07,links[i]->height+0.07,links[i]->min_length);
 
@@ -127,11 +127,12 @@ void kinematic_chain::draw_chain()
             scale_mat=identity;
             translate_mat.translate(links[i]->global_position(0),links[i]->global_position(1),links[i]->global_position(2));
 
-            //выбор болших сторон для сферы шарнира
+            //выбор больших сторон для сферы шарнира
             if(links[i]->width>links[par_id]->width)w=links[i]->width;
             else w=links[par_id]->width;
             if(links[i]->height>links[par_id]->height)h=links[i]->height;
             else h=links[par_id]->height;
+
             if(links[i]->subtype==1)
             {
                 h+=0.02;
@@ -351,7 +352,7 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
 {
     int child_num = links[start_link_id]->childs_id.size();
 
-    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,velocity)) return;
+    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,1.0)) return;
 
 
     //for error compensation
@@ -371,7 +372,19 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
     {
         childs_glob_trans_recalc(links[start_link_id]->childs_id[i],q,velocity);
     }
+}
 
+void kinematic_chain::glob_pos_recalc(int start_link_id, int parent_id)
+{
+    int child_num = links[start_link_id]->childs_id.size();
+
+    links[start_link_id]->global_position = links[parent_id]->global_position + links[parent_id]->dir * links[parent_id]->length * links[start_link_id]->position(2)
+            + links[parent_id]->right * links[start_link_id]->position(0) + links[parent_id]->up * links[start_link_id]->position(1);
+
+    for(int i=0; i<child_num; i++)
+    {
+        glob_pos_recalc(links[start_link_id]->childs_id[i],links[start_link_id]->id);
+    }
 }
 
 void kinematic_chain::set_link_angles(int link_id,double yaw,double pitch, double roll)
@@ -516,7 +529,7 @@ void kinematic_chain::Forces_calculation(double velocity)
 {
     int cur_joint_id,child_id;
     bool last_step=false;
-    Vector3d Force,child_dir,Max_Force=Vector3d(0,0,0),Force_before;
+    Vector3d Force,child_dir,Max_Force = Vector3d(0,0,0),Force_before;
     //QVector<int> childs;
     for(unsigned int e=0;e<effectors.size();e++)
     {
@@ -526,9 +539,9 @@ void kinematic_chain::Forces_calculation(double velocity)
         // не обрабатывается случай со смещенной костью
 
         if(TARGET_ACTIVATED)
-            Force=effectors[e].target-(links[cur_joint_id]->global_position+links[cur_joint_id]->dir*links[cur_joint_id]->length);
+            Force = effectors[e].target - (links[cur_joint_id]->global_position + links[cur_joint_id]->dir * links[cur_joint_id]->length);
         else
-            Force=Vector3d(0,0,0) ;
+            Force = Vector3d(0,0,0) ;
 
         Force_before=Force;
         //нормализация вектора силы ----------------------------------------------------
@@ -565,10 +578,10 @@ void kinematic_chain::Forces_calculation(double velocity)
             }
             else child_dir=links[child_id]->dir;*/
 
-            child_dir=links[child_id]->dir;
+            child_dir = links[child_id]->dir;
 
-             Force_before=Force;
-            Force=links[cur_joint_id]->calculate_Force(Force, effectors[e].K, cur_joint_id==effectors[e].id, child_dir, velocity, ELASTIC_GLOBAL);
+            Force_before = Force;
+            Force = links[cur_joint_id]->calculate_Force(Force, effectors[e].K, cur_joint_id == effectors[e].id, child_dir, velocity, ELASTIC_GLOBAL);
        // qDebug("Force(%d): %f, %f, %f",cur_joint_id,Force.x(),Force.y(),Force.z());
             if(rot_max_Force)
             {
@@ -592,6 +605,7 @@ void kinematic_chain::rotation_step_calculate(double velocity)
     bool last_step=false;
 
     Forces_calculation(velocity);
+
     for(unsigned int e=0;e<effectors.size();e++)
     {
         cur_joint_id=effectors[e].id;
@@ -603,15 +617,18 @@ void kinematic_chain::rotation_step_calculate(double velocity)
             cur_joint_id=links[cur_joint_id]->parent_id;
         }
 
-        for(int i=joints_to_move.size()-1; i>=0; i--)//проход по костям от корня к эффектору
+        //for(int i=joints_to_move.size()-1; i>=0; i--)//проход по костям от корня к эффектору
+        for(int i = 0; i < joints_to_move.size(); i++)// от эффектора к корню
         {
             //проверка на отключение поворота----------------------------------------
             if(bone_disabling)
             {
                 Vector3d to_target;
-                double childs_len=0,to_target_scal;
+                double childs_len = 0,to_target_scal;
+
                 to_target = effectors[e].target -
                         (joints_to_move[i]->global_position + joints_to_move[i]->dir * joints_to_move[i]->length);
+
                 for(int c = i - 1; c>=0; c--)
                 {
                     if(joints_to_move[c]->telescopic)childs_len += joints_to_move[c]->max_length;
@@ -620,7 +637,7 @@ void kinematic_chain::rotation_step_calculate(double velocity)
 
                 to_target_scal = to_target.x() * to_target.x() + to_target.y() * to_target.y() + to_target.z() * to_target.z();
 
-                if(childs_len * childs_len>to_target_scal) continue;
+                if(childs_len * childs_len > to_target_scal) continue;
             }
 
 
@@ -632,7 +649,7 @@ void kinematic_chain::rotation_step_calculate(double velocity)
 
             Quaterniond rot_quat(AngleAxisd(angle,axis));//обратно в кватернион
 
-            if(rot_max_Force&&joints_to_move[i]->id != max_Force_id) goto skip_rot;
+            if(rot_max_Force && joints_to_move[i]->id != max_Force_id) goto skip_rot;
 
 
 
@@ -642,8 +659,9 @@ void kinematic_chain::rotation_step_calculate(double velocity)
                 ||joints_to_move[i]->Result_Force.z()
                 ||joints_to_move[i]->Result_Force.w()))
             {
-                joints_to_move[i]->global_transform=rot_quat*joints_to_move[i]->global_transform;
+                joints_to_move[i]->global_transform = rot_quat*joints_to_move[i]->global_transform;
             }
+
             joints_to_move[i]->refresh_bone_axis();//обновление осей кости
 
             //обработка слайдера----------------------------------
@@ -667,17 +685,26 @@ void kinematic_chain::rotation_step_calculate(double velocity)
             }
 
             skip_rot:
-            if (rot_max_Force&&joints_to_move[i]->id!=max_Force_id)joints_to_move[i]->refresh_bone_axis();//обновление осей кости;
+            if (rot_max_Force && joints_to_move[i]->id != max_Force_id) joints_to_move[i]->refresh_bone_axis();//обновление осей кости;
+
+            //joints_to_move[i]->refresh_bone_axis();
 
             //обновление global_position детей  (возможное место лага при включенном bone_disabling при дальнейшем развитии!!!!!!!!!!!!!)
-            for(unsigned int j=0;j<joints_to_move[i]->childs_id.size();j++)
+            for(unsigned int j = 0; j < joints_to_move[i]->childs_id.size(); j++)
             {
                 //нужна проврка на вхождение joints_to_move, для пересчёта потомков не входящих в цепь поворота
                 abstract_joint* bone = links[joints_to_move[i]->childs_id[j]];
-                bone->global_position = joints_to_move[i]->global_position + joints_to_move[i]->dir * joints_to_move[i]->length * bone->position(2)
-                        + joints_to_move[i]->right * bone->position(0) + joints_to_move[i]->up * bone->position(1);
+
+                int child_id = links[joints_to_move[i]->childs_id[j]]->id;
+                glob_pos_recalc(child_id, joints_to_move[i]->id);
+
+                //bone->global_position = joints_to_move[i]->global_position + joints_to_move[i]->dir * joints_to_move[i]->length * bone->position(2)
+                //        + joints_to_move[i]->right * bone->position(0) + joints_to_move[i]->up * bone->position(1); //от корня к эфектору
+
+
                 // Обновление Угла ---------------------------------------
-                if (!(rot_max_Force && joints_to_move[i]->id != max_Force_id)) childs_glob_trans_recalc(bone->id,rot_quat,velocity);
+                if (!(rot_max_Force && joints_to_move[i]->id != max_Force_id)) childs_glob_trans_recalc(bone->id, rot_quat, velocity);
+
                    //bone->global_transform=rot_quat*bone->global_transform; //
                    //bone->refresh_bone_axis();//обновление осей кости
                    //bone->global_transform=bone->global_transform*rot_quat;

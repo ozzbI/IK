@@ -51,17 +51,17 @@ public:
             par_dir=Vector3d(temp.x(),temp.y(),temp.z());
         }
 
-        axis=direct.cross(par_dir);
+        axis = direct.cross(par_dir);
         if(!(axis.x()||axis.y()||axis.z())) next_angle=0;
         else
         {
-            if(axis.dot(right)>0) next_angle=angle(direct,par_dir);
-            if(axis.dot(right)<0) next_angle=-angle(direct,par_dir);
+            if(axis.dot(right)>0) next_angle = angle(direct,par_dir);
+            if(axis.dot(right)<0) next_angle = -angle(direct,par_dir);
         }
 
         //if(id==1)qDebug("angle: %f",next_angle);
 
-        if(lim_ang[1]<next_angle&&next_angle<lim_ang[0])return true;
+        if(lim_ang[1] < next_angle && next_angle < lim_ang[0])return true;
         else return false;
     }
 

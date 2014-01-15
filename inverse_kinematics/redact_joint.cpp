@@ -16,6 +16,8 @@ void redact_joint::set_kc(kinematic_chain* nkc,int ni)
     setWindowTitle(tr("Редактирование звена"));
 
     ui->len->setValue(kc->links[i]->length);
+    ui->widthSpinBox->setValue(kc->links[i]->width);
+    ui->heightSpinBox->setValue(kc->links[i]->height);
 
     if(kc->links[i]->telescopic)ui->slider_box->setCheckState(Qt::Checked);
     ui->bone->setText(QString("%1").arg(i));
@@ -72,8 +74,10 @@ redact_joint::~redact_joint()
 
 void redact_joint::on_Ok_but_clicked()
 {
+    kc->links[i]->length = ui->len->value();
+    kc->links[i]->width = ui->widthSpinBox->value();
+    kc->links[i]->height = ui->heightSpinBox->value();
 
-    kc->links[i]->length=ui->len->value();
     if(ui->slider_box->checkState() == Qt::Checked)
     {
         kc->links[i]->telescopic = true;
@@ -81,9 +85,11 @@ void redact_joint::on_Ok_but_clicked()
         if(kc->links[i]->length<kc->links[i]->min_length) kc->links[i]->length=kc->links[i]->min_length;
     }
     else kc->links[i]->telescopic = false;
+
     if(kc->links[i]->type == 1)
     {
         AngleAxisd aa(ui->ang1->value()*M_PI/180.0,Vector3d(0,0,-1));
+
         if(kc->links[i]->aa_limiter.size() == 0)kc->links[i]->aa_limiter.push_back(aa);
         else if(kc->links[i]->aa_limiter.size() == 1)
         {
@@ -91,6 +97,7 @@ void redact_joint::on_Ok_but_clicked()
             kc->links[i]->aa_limiter.push_back(aa);
         }
     }
+
     if(kc->links[i]->type == 2)
     {
         kc->links[i]->lim_ang[0]=ui->ang1->value() * M_PI/180.0;
