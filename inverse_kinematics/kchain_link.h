@@ -9,7 +9,9 @@ using namespace std;
 class Kchain_link
 {
 public:
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     double yaw,pitch,roll;
     double length,width,height;
 
@@ -47,6 +49,7 @@ public:
 
     Kchain_link();
     Kchain_link(Vector3d in_pos,double in_lenght,int in_parent_id,double in_yaw,double in_pitch,double in_roll,bool in_root);
+
     void add_child(int child_id);
     void calc_local_transform();
     void refresh_bone_axis();

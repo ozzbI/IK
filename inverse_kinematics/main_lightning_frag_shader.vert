@@ -1,3 +1,5 @@
+#version 150
+
 attribute highp vec4 vertex;
 attribute highp vec4 texCoord;
 attribute highp vec4 normal;
@@ -12,5 +14,5 @@ void main(void)
     pos = model_matrix*vertex;
     gl_Position = proj_matrix*view_matrix*pos;
     texc = texCoord;
-    normal_for_fs=normalize(model_matrix*normal);
+    normal_for_fs = normalize(model_matrix*normal);
 }

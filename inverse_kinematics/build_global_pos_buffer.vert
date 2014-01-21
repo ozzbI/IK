@@ -10,6 +10,6 @@ uniform highp mat4 proj_matrix;
 
 void main(void)
 {
-    pos = view_matrix * model_matrix * vertex;
-    gl_Position = proj_matrix * pos;
+    pos = model_matrix * vertex;
+    gl_Position = proj_matrix * view_matrix * pos;
 }

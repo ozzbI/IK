@@ -1,3 +1,4 @@
+#version 120
 #extension GL_ARB_texture_rectangle : enable
 
 uniform sampler2DRect   aoMap;
@@ -6,7 +7,6 @@ uniform sampler2DRect   srcMap;
 uniform vec2 viewport_size;
 
 uniform int ssao;
-uniform int shadows;
 
 void main (void)
 {
@@ -21,7 +21,7 @@ void main (void)
     vec4    ao = vec4 ( 0.0 );
 
 
-    if(ssao) // bilinear interpolation needed
+    if(bool(ssao)) // bilinear interpolation needed
     {
         /*
         k = fract(ao_texel_coord) - vec2(0.5);
@@ -35,8 +35,8 @@ void main (void)
          ao = vec4(texture2DRect ( aoMap, gl_FragCoord.xy ).r);
     }
 
-    if(ssao)
-        gl_FragColor = vec4( (texture2DRect ( srcMap, gl_FragCoord.xy ) * pow( vec3(ao), vec4 ( 2.0 ) ) ).xyz, 1.0);
+    if(bool(ssao))
+        gl_FragColor = vec4( (texture2DRect ( srcMap, gl_FragCoord.xy ).xyz * pow( vec3(ao), vec3 ( 2.0 ) ) ).xyz, 1.0);
     else
         gl_FragColor = texture2DRect ( srcMap, gl_FragCoord.xy );
 }

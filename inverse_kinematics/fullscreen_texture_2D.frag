@@ -1,3 +1,5 @@
+#version 120
+
 uniform sampler2D Texture0;
 varying vec4 TexCoord0;
 

@@ -37,9 +37,6 @@ public:
     double slider_elastic_K_2;
     double slider_elastic_L;
 
-    virtual bool rotation_possibility(Quaterniond q,double velocity)=0;
-    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)=0;
-
 
     abstract_joint(Vector3d in_pos,double in_lenght,int in_parent_id,double in_yaw,double in_pitch,double in_roll,bool in_root)
         :Kchain_link( in_pos, in_lenght, in_parent_id, in_yaw, in_pitch, in_roll, in_root)
@@ -73,6 +70,9 @@ public:
 
 
     }
+
+    virtual bool rotation_possibility(Quaterniond q,double velocity)=0;
+    virtual Vector3d calculate_Force(Vector3d& Force,double K,bool rand_ax,Vector3d& child_dir,double velocity,bool global_elastic)=0;
 
     Vector3d projection(const Vector3d& a,  const Vector3d& b)//b на a
     {

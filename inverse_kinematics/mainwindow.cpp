@@ -53,90 +53,84 @@ void MainWindow::max_links(int ml)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     //set_text("press");
-    switch (event->key()) {
-    //cam walking
-      case  Qt::Key_W:
-        glw->cam.walk(0.2*move_sens);
-          break;
-      case  Qt::Key_S:
-        glw->cam.walk(-0.2*move_sens);
-          break;
-      case Qt::Key_A:
-        glw->cam.strafe(-0.2*move_sens);
-          break;
-      case  Qt::Key_D:
-      glw->cam.strafe(0.2*move_sens);
-          break;
-      case Qt::Key_Z:
-      glw->cam.fly(0.2*move_sens);
-          break;
-      case  Qt::Key_X:
-      glw->cam.fly(-0.2*move_sens);
-          break;
-      //cam turning
-   /* case Qt::Key_8:
-      glw->cam.pitch(3.14/90);
-        break;
-    case  Qt::Key_5:
-    glw->cam.pitch(-3.14/90);
-        break;
-    case Qt::Key_6:
-    glw->cam.yaw(-3.14/90);
-        break;
-    case  Qt::Key_4:
-    glw->cam.yaw(3.14/90);
-        break;*/
-    //target turning
-    case Qt::Key_1:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0.1,0);
-    break;
-    case Qt::Key_2:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,-0.1,0);
-    break;
-    case Qt::Key_4:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(-0.1,0,0);
-    break;
-    case Qt::Key_6:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(0.1,0,0);
-    break;
-    case Qt::Key_8:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0,-0.1);
-    break;
-    case Qt::Key_5:
-        glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0,0.1);
-    break;
+    switch (event->key())
+    {
+        //cam walking
+        case  Qt::Key_W:
+            glw->cam.walk(0.2*move_sens);
+            break;
+        case  Qt::Key_S:
+            glw->cam.walk(-0.2*move_sens);
+            break;
+        case Qt::Key_A:
+            glw->cam.strafe(-0.2*move_sens);
+            break;
+        case  Qt::Key_D:
+            glw->cam.strafe(0.2*move_sens);
+            break;
+        case Qt::Key_Z:
+            glw->cam.fly(0.2*move_sens);
+            break;
+        case  Qt::Key_X:
+            glw->cam.fly(-0.2*move_sens);
+            break;
+          //cam turning
+        /* case Qt::Key_8:
+          glw->cam.pitch(3.14/90);
+            break;
+        case  Qt::Key_5:
+        glw->cam.pitch(-3.14/90);
+            break;
+        case Qt::Key_6:
+        glw->cam.yaw(-3.14/90);
+            break;
+        case  Qt::Key_4:
+        glw->cam.yaw(3.14/90);
+            break;*/
+        //target turning
+        case Qt::Key_1:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0.1,0);
+            break;
+        case Qt::Key_2:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,-0.1,0);
+            break;
+        case Qt::Key_4:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(-0.1,0,0);
+            break;
+        case Qt::Key_6:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(0.1,0,0);
+            break;
+        case Qt::Key_8:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0,-0.1);
+            break;
+        case Qt::Key_5:
+            glw->KChain.effectors[glw->active_effector].target+=Vector3d(0,0,0.1);
+            break;
 
-
-    //light moving
-    case  Qt::Key_I:
-        glw->light_pos+=QVector4D(0,0,(float)-0.1,0);
-    glw->set_lp();
-        break;
-    case Qt::Key_K:
-        glw->light_pos+=QVector4D(0,0,(float)0.1,0);
-    glw->set_lp();
-        break;
-    case  Qt::Key_J:
-        glw->light_pos+=QVector4D(-0.1,0,0,0);
-    glw->set_lp();
-        break;
-    case  Qt::Key_L:
-        glw->light_pos+=QVector4D(0.1,0,0,0);
-    glw->set_lp();;
-        break;
-   case  Qt::Key_N:
-        glw->light_pos+=QVector4D(0,1,0,0);
-    glw->set_lp();
-        break;
-   case  Qt::Key_M:
-        glw->light_pos+=QVector4D(0,-1,0,0);
-   glw->set_lp();
-        break;
-   case  Qt::Key_Control:
-        //qDebug("cntrl_pressed");
-        //ctrl_pressed=true;
-        glw->ctrl_pressed=true;
-        break;
+        //light moving
+        case  Qt::Key_I:
+            glw->set_lp(QVector4D(0,0,-1.0,0));
+            break;
+        case Qt::Key_K:
+            glw->set_lp(QVector4D(0,0,1.0,0));
+            break;
+        case  Qt::Key_J:
+            glw->set_lp(QVector4D(-1.0,0,0,0));
+            break;
+        case  Qt::Key_L:
+            glw->set_lp(QVector4D(1.0,0,0,0));
+            break;
+        case  Qt::Key_N:
+            glw->set_lp(QVector4D(0,1,0,0));
+            break;
+        case  Qt::Key_M:
+            glw->set_lp(QVector4D(0,-1,0,0));
+            break;
+        case  Qt::Key_Control:
+            //qDebug("cntrl_pressed");
+            //ctrl_pressed=true;
+            glw->ctrl_pressed=true;
+            break;
     }
 
 }
@@ -567,15 +561,38 @@ void MainWindow::on_elastic_joints_checkbox_stateChanged(int arg1)
 //menu
 void  MainWindow::createActions()
 {
+    ssaoAct = new QAction("ssao", this);
+    ssaoAct->setCheckable(true);
+    ssaoAct->toggle();
+    connect(ssaoAct,SIGNAL(toggled(bool)),this,SLOT(on_ssao_changed(bool)));
+
+    shadowsAct = new QAction("тени", this);
+    shadowsAct->setCheckable(true);
+    shadowsAct->toggle();
+    connect(shadowsAct,SIGNAL(toggled(bool)),this,SLOT(on_shadows_changed(bool)));
 
 }
 
 void  MainWindow::createMenus()
 {
-    QMenu * mnFile = new QMenu("File");
-    QMenu * mnSceneObjects = new QMenu("Scene Objects");
+    mnFile = new QMenu("Файл");
+    mnSceneObjects = new QMenu("Сцена");
+    mnGraphic = new QMenu("Графика");
 
     ui->menuBar->addMenu(mnFile);
     ui->menuBar->addMenu(mnSceneObjects);
+    ui->menuBar->addMenu(mnGraphic);
 
+    mnGraphic->addAction(shadowsAct);
+    mnGraphic->addAction(ssaoAct);
+}
+
+void MainWindow::on_ssao_changed(bool state)
+{
+    glw->set_ssao(state);
+}
+
+void MainWindow::on_shadows_changed(bool state)
+{
+    glw->set_shadows(state);
 }

@@ -3,20 +3,13 @@
 
 #include<C:\Qt_projects\Eigen\Dense>
 #include <camera.h>
-//#include <QGLShaderProgram>
 #include <QtOpenGL>
-//#include <QGLWidget>
-//#include <QGLFunctions>
 
 class coord_axis
 {
-private:
 
-    QGLShaderProgram *program;
-    QMatrix4x4 view;
-    Vector3d pos;
-    GLfloat vgl[16];
 public:
+
     coord_axis()
     {
     }
@@ -75,8 +68,16 @@ public:
           glVertex3f(pos(0),pos(1)+1,pos(2));
           glEnd();
 
-           program->bind();
+          program->bind();
     }
+
+private:
+
+    QGLShaderProgram *program;
+    QMatrix4x4 view;
+    Vector3d pos;
+    GLfloat vgl[16];
+
 };
 
 #endif // COORD_AXIS_H

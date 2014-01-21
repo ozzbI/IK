@@ -18,36 +18,36 @@ class MainWindow : public QMainWindow
 public:
 
     double move_sens;
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
     GLWidget* glw;
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
 
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
+
 private:
+
     Ui::MainWindow *ui;
     joint_choise* jc;
     QDoubleValidator* start_param_validator;
     bool ctrl_pressed;
+    QMenu *mnFile;
+    QMenu *mnSceneObjects;
+    QMenu *mnGraphic;
+    QAction *ssaoAct;
+    QAction *shadowsAct;
+
 signals:
     void rotate_link(int id,double yaw,double pitch,double roll);
     void set_link_rotation(int id,double yaw,double pitch,double roll);
+
 private slots:
-
-
     void on_STOP_START_clicked();
 
     void on_RESTART_clicked();
     void set_move_sens(int new_move_sens);
 
     void max_links(int ml);
-
-   /* void on_yaw_plus_clicked();
-    void on_yaw_min_clicked();
-    void on_pitch_min_clicked();
-    void on_pitch_plus_clicked();
-    void on_roll_plus_clicked();
-    void on_roll_min_clicked();*/
 
     void on_link_valueChanged(int arg1);
     void on_yaw_sl_valueChanged(int value);
@@ -69,6 +69,8 @@ private slots:
     void on_elastic_joints_checkbox_clicked(bool checked);
     void on_Target_Activated_checkbox_stateChanged(int arg1);
     void on_elastic_joints_checkbox_stateChanged(int arg1);
+    void on_ssao_changed(bool state);
+    void on_shadows_changed(bool state);
 
     //menu
     void createActions();

@@ -22,6 +22,7 @@ Camera::Camera(CameraType cameraType)
     _up    = Vector3d(0.0f, 1.0f, 0.0f);
     _look  = Vector3d(0.0f, 0.0f, 1.0f);
 }
+
 Camera::~Camera()
 {
 }
@@ -124,15 +125,15 @@ void Camera::getViewMatrix(QMatrix4x4* V)
     // Keep camera's axes orthogonal to eachother
     _look.normalize();
 
-    _up=_look.cross(_right);
+    _up = _look.cross(_right);
     _up.normalize();
 
     _right=_up.cross(_look);
     _right.normalize();
 
-    double x=-_right.dot(_pos);
-    double y=-_up.dot(_pos);
-    double z=-_look.dot(_pos);
+    double x =-_right.dot(_pos);
+    double y =-_up.dot(_pos);
+    double z =-_look.dot(_pos);
 
     (*V)(0,0) = _right.x(); (*V)(0, 1) = _up.x(); (*V)(0, 2) = _look.x(); (*V)(0, 3) = 0.0f;
     (*V)(1,0) = _right.y(); (*V)(1, 1) = _up.y(); (*V)(1, 2) = _look.y(); (*V)(1, 3) = 0.0f;
@@ -154,32 +155,32 @@ void Camera::enable_scene_cam(bool state)
     if(state)
     {
     Quaterniond q1(AngleAxisd(angle_1,Vector3d(1,0,0))),q2(AngleAxisd(angle_2,Vector3d(0,1,0)));
-    q1=q2*q1;
+    q1 = q2 * q1;
 
     Matrix3d T;
-     T=q1.toRotationMatrix();
-     _up=T*Vector3d(0,1,0);
-    _look=T*Vector3d(0,0,-1);
-    _right=_up.cross(_look);
+    T = q1.toRotationMatrix();
+    _up = T * Vector3d(0,1,0);
+    _look = T * Vector3d(0,0,-1);
+    _right = _up.cross(_look);
     _right.normalize();
 
     _pos=_look*R;
     }
 }
 
-void Camera::rot_cam(double a1,double a2,double add_R)
+void Camera::rot_cam(double a1, double a2, double add_R)
 {
-    angle_1+=a1;angle_2+=a2;R+=add_R;
+    angle_1 += a1;angle_2+=a2;R+=add_R;
     Quaterniond q1(AngleAxisd(angle_1,Vector3d(1,0,0))),q2(AngleAxisd(angle_2,Vector3d(0,1,0)));
-    q1=q2*q1;
+    q1 = q2 * q1;
 
     Matrix3d T;
-     T=q1.toRotationMatrix();
-     _up=T*Vector3d(0,1,0);
-    _look=T*Vector3d(0,0,-1);
-    _right=_up.cross(_look);
+    T = q1.toRotationMatrix();
+    _up = T * Vector3d(0,1,0);
+    _look = T * Vector3d(0,0,-1);
+    _right = _up.cross(_look);
     _right.normalize();
 
-    _pos=_look*R;
+    _pos = _look*R;
 
 }

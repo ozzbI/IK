@@ -1,3 +1,5 @@
+#version 120
+
 attribute highp vec4 vertex;
 attribute highp vec4 normal;
 varying highp vec4 normal_for_fs;

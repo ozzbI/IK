@@ -14,14 +14,6 @@
 #include <scene.h>
 #include "cubemapfbo.h"
 
-
-/* MyGui Test*/
-
-//#include <C:\MyGUI_3.2.0\MyGUI_3.2.0\MyGUIEngine\include\MyGui.h>
-//#include <MyGUI.h>
-
-/*MyGui---------------*/
-
 class QGLShaderProgram;
 
 class GLWidget : public QGLWidget
@@ -29,15 +21,6 @@ class GLWidget : public QGLWidget
     Q_OBJECT
 
 public:
-    GLWidget(QWidget *parent = 0, QGLWidget *shareWidget = 0);
-    ~GLWidget();
-
-
-    /* MyGui Test*/
-
-   // MyGUI::Gui* mGUI;
-
-    /*MyGui---------------*/
 
     double aspect_ratio;
     int active_effector;
@@ -45,7 +28,6 @@ public:
     bool target_selected,move_target,ctrl_pressed;
     bool stop_proc,main_stop;
     double move_vel;
-
 
 
     QOpenGLFramebufferObject* ssao_fbo_normal;
@@ -60,11 +42,15 @@ public:
     QOpenGLFramebufferObject* main_scene_fbo;
     QOpenGLFramebufferObject* main_scene_fbo_sampled;
 
+    QOpenGLFramebufferObject* shadow_fbo;
+    QOpenGLFramebufferObject* shadow_fbo_global_pos;
+
     CubeMapFBO* cube_fbo;
-    Camera light_cam;
+    QMatrix4x4 light_ViewMatrix[6];
+    QMatrix4x4 light_ProjMatrix;
+    QMatrix4x4 light_ProjViewMatrix[6];
 
-    bool ssao;
-
+    bool ssao, shadows;
 
     QVector3D intersect_point;
 
@@ -74,41 +60,38 @@ public:
     QVector3D a,b;
 //-------------------
 
-    void setClearColor(const QColor &color);
+
     Camera cam;
-
     QVector4D light_pos;
-
-
     kinematic_chain KChain;
-
     Scene* scene;
 
+    GLWidget(QWidget *parent = 0, QGLWidget *shareWidget = 0);
+    ~GLWidget();
 
-    void set_lp()
+    void set_lp(QVector4D d_light_pos)
     {
-        program->setUniformValue("light_pos",light_pos);
+        light_pos += d_light_pos;
+        program->setUniformValue("light_pos", light_pos);
+        calculate_light_matrices();
     }
 
+    void setClearColor(const QColor &color);
     float poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point );
-
     float poly_intersect( QVector3D origin, QVector3D direction, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
-
-    bool  sphere_intersect(QVector3D origin_in, QVector3D direction_in, QVector3D sph_C,double sph_r);
-
+    bool sphere_intersect(QVector3D origin_in, QVector3D direction_in, QVector3D sph_C,double sph_r);
     void draw_fullscreen_texture(GLuint texture, GLenum texture_type = GL_TEXTURE_RECTANGLE);
-
     void make_ssao_shaded_texture();
-
     void blur_fbo(QOpenGLFramebufferObject *fbo_1, QOpenGLFramebufferObject *fbo_2, int passes);
-
     void upsacle_interpolation(QOpenGLFramebufferObject *src, QOpenGLFramebufferObject *dest);
-
     void combine_textures();
-
     void draw_scene_to_fbo(QOpenGLFramebufferObject *fbo, QGLShaderProgram *pass_program);
+    void calculate_light_matrices();
+    void render_to_shadow_cubemap();
+    void build_shadows();
+    void set_ssao(bool state);
+    void set_shadows(bool state);
 
-//-----------------------------------------
 signals:
     void clicked();
     void get_str(QString);
@@ -125,13 +108,14 @@ protected:
     void wheelEvent(QWheelEvent * event);
 
 private:
+
     int w,h;
     QTimer *timer;
     QTime animation_timer;
-    QMatrix4x4 v;
-    QMatrix4x4 p;
+    QMatrix4x4 v; //main view matrix
+    QMatrix4x4 p; //perspective proje matrix
 
-    QGLFunctions *glFuncs;
+    QOpenGLFunctions *glFuncs;
 
     QColor clearColor;
     QPoint lastPos;
@@ -141,6 +125,7 @@ private:
 
     QGLShaderProgram *ssao_build_norm_program;
     QGLShaderProgram *ssao_build_pos_program;
+    QGLShaderProgram *build_global_pos_program;
     QGLShaderProgram *ssao_build_shaded_texture_program;
     QGLShaderProgram *combine_textures_program;
     QGLShaderProgram *ssao_blur_program;
@@ -148,6 +133,9 @@ private:
 
     QGLShaderProgram *fullscreen_texture_program;
     QGLShaderProgram *fullscreen_texture_program_2D;
+
+    QGLShaderProgram *only_depth_program;
+    QGLShaderProgram *build_shadow_program;
 
     GLuint test_pic;
     GLuint ssao_rot_texture;

@@ -9,13 +9,6 @@
 class box
 {
 public:
-    box (int clipped = 0);
-    void setshaderprog(QGLShaderProgram* new_prog);
-    void set_material(QVector4D new_material);
-    void set_texures(GLuint* new_textures);
-    void set_gl_func(QGLFunctions* in_glfunc);
-    void inverse_normals();
-    void draw();
 
     int without_texture;
     QGLFunctions* glfunc;
@@ -26,6 +19,14 @@ public:
     QVector<QVector2D> texCoords;
     QGLShaderProgram *program;
     QVector4D material;
+
+    box (int clipped = 0);
+    void setshaderprog(QGLShaderProgram* new_prog);
+    void set_material(QVector4D new_material);
+    void set_texures(GLuint* new_textures);
+    void set_gl_func(QGLFunctions* in_glfunc);
+    void inverse_normals();
+    void draw();
 };
 
 #endif // BOX_H

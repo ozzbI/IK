@@ -70,7 +70,11 @@ OTHER_FILES += \
     main_lightning_frag_shader.frag \
     main_lightning_frag_shader.vert \
     upscale_interpolation.frag \
-    upscale_interpolation.vert
+    upscale_interpolation.vert \
+    only_depth.frag \
+    build_shadows.frag \
+    build_shadows.vert \
+    build_global_pos_buffer.vert
 
 RESOURCES += \
     resources.qrc

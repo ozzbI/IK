@@ -8,48 +8,54 @@ using namespace Eigen;
 
 class Camera
 {
-
     enum CameraType { LANDOBJECT, AIRCRAFT };
+
 public:
-         Camera();
-         Camera(CameraType cameraType);
-        ~Camera();
 
-        void strafe(double units); // left/right
-        void fly(double units);    // up/down
-        void walk(double units);   // forward/backward
+    Camera();
+    Camera(CameraType cameraType);
+    ~Camera();
 
-        void pitch(double angle); // rotate on right vector
-        void yaw(double angle);   // rotate on up vector
-        void roll(double angle);  // rotate on look vector
+    void strafe(double units); // left/right
+    void fly(double units);    // up/down
+    void walk(double units);   // forward/backward
 
-        void getViewMatrix(QMatrix4x4 *V);
-        void setCameraType(CameraType cameraType);
-        void getPosition(Vector3d* pos);
-        void setPosition(Vector3d pos);
+    void pitch(double angle); // rotate on right vector
+    void yaw(double angle);   // rotate on up vector
+    void roll(double angle);  // rotate on look vector
 
-        void getRight(Vector3d* right);
-        void getUp(Vector3d* up);
-        void getLook(Vector3d* look);
+    void getViewMatrix(QMatrix4x4 *V);
+    void setCameraType(CameraType cameraType);
+    void getPosition(Vector3d* pos);
+    void setPosition(Vector3d pos);
 
-        Vector3d getRight(){return _right;}
-        Vector3d getUp(){return _up;}
-        Vector3d getLook(){return _look;}
-        Vector3d getPosition(){return _pos;}
+    void getRight(Vector3d* right);
+    void getUp(Vector3d* up);
+    void getLook(Vector3d* look);
 
-        void enable_scene_cam(bool state);
-        void rot_cam(double a1,double a2,double add_R);
+    Vector3d getRight(){return _right;}
+    Vector3d getUp(){return _up;}
+    Vector3d getLook(){return _look;}
+    Vector3d getPosition(){return _pos;}
 
-        bool scene_view;
+    void setRight(Vector3d right){_right = right;}
+    void setUp(Vector3d up){_up = up;}
+    void setLook(Vector3d look){_look = look;}
 
-    private:
-        CameraType  _cameraType;
-        Vector3d _right;
-        Vector3d _up;
-        Vector3d _look;
-        Vector3d _pos;
+    void enable_scene_cam(bool state);
+    void rot_cam(double a1,double a2,double add_R);
 
-        double angle_1,angle_2,R;
+    bool scene_view;
+
+private:
+
+    CameraType  _cameraType;
+    Vector3d _right;
+    Vector3d _up;
+    Vector3d _look;
+    Vector3d _pos;
+
+    double angle_1,angle_2,R;
 };
 
 #endif // CAMERA_H

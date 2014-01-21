@@ -2,7 +2,7 @@
 #define KINEMATIC_CHAIN_H
 
 #include <kchain_link.h>
-#include<C:\Qt_projects\Eigen\Dense>
+#include <C:\Qt_projects\Eigen\Dense>
 #include <box.h>
 #include <QtOpenGL>
 #include <link_vec.h>
@@ -25,7 +25,7 @@ private:
     cylinder cyl_ra;
     cylinder cyl_t2;
     sphere sph;
-    bool bone_disabling;//отключение поворота для кости если расстояние от эффекторра до цели меньше длины потомков
+    bool bone_disabling; //отключение поворота для кости если расстояние от эффекторра до цели меньше длины потомков
     bool Force_normalizing;
     bool rot_max_Force;
     int max_Force_id;
@@ -60,6 +60,7 @@ public:
         double K;
         Vector3d target;
     };
+
     vector<effector,Eigen::aligned_allocator<effector> > effectors;
 
     kinematic_chain();

@@ -6,6 +6,7 @@
 class cylinder
 {
 private:
+
     GLuint *textures;
     QVector4D material;
     QVector<QVector4D> vertices;
@@ -14,9 +15,12 @@ private:
     QGLShaderProgram *program;
     int precision;
     int without_texture;
+
 public:
+
     QMatrix4x4 model;
     QMatrix4x4 add_model;
+
     cylinder()
     {
         //add_model.rotate(90,0,0,1);

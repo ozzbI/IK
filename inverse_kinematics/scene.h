@@ -24,8 +24,6 @@ public:
 
     void run();
 
-//signals:
-  //  void draw_collision_box(QVector3D collision_point);
 };
 
 
@@ -35,8 +33,6 @@ class Scene : public QObject
     Q_OBJECT
 
 public:
-
-
 
     QVector<figure> Scene_objects; //IK chain object in 1st element
     QVector<figure> IK_Chain_objects;
@@ -68,14 +64,6 @@ public:
     void draw_objects();
     void move_object(int i, double x,double y, double z);
     void rotate_object(int i, double x,double y, double z);
-
-    /*QVector<QVector3D> vertices;
-    QVector<QVector4D> normals;
-    QVector<QVector2D> texCoords;
-
-    QGLShaderProgram *program;
-    GLuint *textures;
-    int without_texture;*/
 
     Scene(QGLShaderProgram *program);
 

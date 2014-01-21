@@ -71,13 +71,13 @@ void kinematic_chain::draw_chain()
 
             base_scale=identity;
             base_scale.scale(2,2,0.2);
-            link_box.model=local_trans*base_trans*base_scale*box_shift_mat_2;
+            link_box.model=translate_mat * local_trans*base_trans*base_scale*box_shift_mat_2;
             link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
             link_box.draw();
 
             base_scale=identity;
             base_scale.scale(0.5,0.5,2.0);
-            link_box.model=local_trans*base_scale*box_shift_mat_2;
+            link_box.model=translate_mat * local_trans*base_scale*box_shift_mat_2;
             link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
             link_box.draw();
         }
@@ -352,7 +352,7 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
 {
     int child_num = links[start_link_id]->childs_id.size();
 
-    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,1.0)) return;
+    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,1.0 /*velocity*/)) return;
 
 
     //for error compensation
@@ -370,7 +370,7 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
 
     for(int i=0; i<child_num; i++)
     {
-        childs_glob_trans_recalc(links[start_link_id]->childs_id[i],q,velocity);
+        childs_glob_trans_recalc(links[start_link_id]->childs_id[i], q, 1.0 /*velocity*/);
     }
 }
 

@@ -119,21 +119,19 @@ public:
 
     void draw()
     {
+        program->setUniformValue("model_matrix", model);
+        program->setUniformValue("without_texture",without_texture);
 
-    program->setUniformValue("model_matrix", model);
-    program->setUniformValue("without_texture",without_texture);
+        program->setAttributeArray
+            (0, vertices.constData());
+        program->setAttributeArray
+            (1, texCoords.constData());
+        program->setAttributeArray
+            (2, normals.constData());
 
-    program->setAttributeArray
-        (0, vertices.constData());
-    program->setAttributeArray
-        (1, texCoords.constData());
-    program->setAttributeArray
-        (2, normals.constData());
-
-    program->setUniformValue("material",material);
-    if(!without_texture)glBindTexture(GL_TEXTURE_2D, textures[0]);
-    glDrawArrays(GL_TRIANGLE_STRIP,0, vertices_num*2);
-
+        program->setUniformValue("material",material);
+        if(!without_texture)glBindTexture(GL_TEXTURE_2D, textures[0]);
+        glDrawArrays(GL_TRIANGLE_STRIP,0, vertices_num*2);
     }
 
 };

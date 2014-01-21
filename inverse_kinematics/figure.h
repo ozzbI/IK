@@ -4,15 +4,15 @@
 
 class edge
 {
-    public:
+public:
+
+    QVector3D A;
+    QVector3D B;
 
     edge()
     {
 
     }
-
-    QVector3D A;
-    QVector3D B;
 };
 
 class figure
@@ -109,7 +109,6 @@ public:
             program->setUniformValue("selected", 0);
         }
     }
-
 
 };
 
