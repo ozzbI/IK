@@ -25,7 +25,8 @@ SOURCES += main.cpp\
     scene.cpp \
     figure.cpp \
     octree.cpp \
-    cubemapfbo.cpp
+    cubemapfbo.cpp \
+    addboxdialog.cpp
 
 HEADERS  += mainwindow.h \
     box.h \
@@ -47,11 +48,13 @@ HEADERS  += mainwindow.h \
     polygon.h \
     scene.h \
     octree.h \
-    cubemapfbo.h
+    cubemapfbo.h \
+    addboxdialog.h
 
 FORMS    += mainwindow.ui \
     joint_choise.ui \
-    redact_joint.ui
+    redact_joint.ui \
+    addboxdialog.ui
 
 OTHER_FILES += \
     ssao_build_shaded_texture.vert \
@@ -74,7 +77,9 @@ OTHER_FILES += \
     only_depth.frag \
     build_shadows.frag \
     build_shadows.vert \
-    build_global_pos_buffer.vert
+    build_global_pos_buffer.vert \
+    line.frag \
+    line.vert
 
 RESOURCES += \
     resources.qrc

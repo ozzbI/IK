@@ -48,6 +48,7 @@ public:
     vector<abstract_joint*> links_backup;
 
     bool collision;
+    bool root_selected;
 
     //выбранное звено
     int chosen_link_id;
@@ -91,6 +92,7 @@ public:
     void enable_bone_disabling(bool state);
     void enable_telescopic(int id,bool state,double min_l,double max_l,double slider_Frict_K);
     void set_Force_normalizing(bool state);
+    void set_max_Force_rotation(bool state);
     void childs_glob_trans_recalc(int start_link_id,Quaterniond &q,double velocity);
     void glob_pos_recalc(int start_link_id, int parent_id);
     void set_subtype(int id,int state);

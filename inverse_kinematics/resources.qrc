@@ -21,6 +21,8 @@
         <file>build_shadows.frag</file>
         <file>build_shadows.vert</file>
         <file>build_global_pos_buffer.vert</file>
+        <file>line.frag</file>
+        <file>line.vert</file>
     </qresource>
     <qresource prefix="/textures">
         <file>rot_texture.jpg</file>

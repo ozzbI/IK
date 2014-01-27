@@ -25,8 +25,9 @@ public:
     double aspect_ratio;
     int active_effector;
     double view_angle;
-    bool target_selected,move_target,ctrl_pressed;
+    bool target_selected, move_target, ctrl_pressed, move_root, root_selected,move_box;
     bool stop_proc,main_stop;
+    bool move_rotate_object, redact_scene_mode;
     double move_vel;
 
 
@@ -50,9 +51,21 @@ public:
     QMatrix4x4 light_ProjMatrix;
     QMatrix4x4 light_ProjViewMatrix[6];
 
-    bool ssao, shadows;
+    bool ssao, shadows, draw_edges;
+    int selected_object_id;
+
+    float movement_precision;
 
     QVector3D intersect_point;
+
+    QVector3D box_intersect_point;
+    QVector3D box_intersect_point_vec;
+
+    figure box_axis; //only axes used
+
+    enum coordAxisStates { xPlane, yPlane, zPlane };
+    coordAxisStates current_axis_state;
+    float current_axis_sign;
 
 //for tests
     bool test_trigger;
@@ -91,6 +104,8 @@ public:
     void build_shadows();
     void set_ssao(bool state);
     void set_shadows(bool state);
+    void add_box_scene(QVector3D pos,QVector3D scale, QVector3D color);
+    void add_box_scene(QMatrix4x4 &rot_scale_matr, QMatrix4x4 &translate_matr, QVector4D &material);
 
 signals:
     void clicked();
@@ -136,6 +151,8 @@ private:
 
     QGLShaderProgram *only_depth_program;
     QGLShaderProgram *build_shadow_program;
+
+    QGLShaderProgram *line_program;
 
     GLuint test_pic;
     GLuint ssao_rot_texture;

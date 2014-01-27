@@ -135,8 +135,6 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
 {
     /* при удалении/вставке звеньев  */
 
-    bool not_empty = false;
-
     box b(1);
     box b0(2);
 
@@ -147,7 +145,6 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
     if(chain_links_n != 0) //если цепь уже задавалась
     {
         Scene_objects.remove(0, chain_links_n);
-        not_empty = true;
     }
 
     chain_links_n = IKChain->links.size();
@@ -229,10 +226,7 @@ void Scene::update_IK_Chain_objects(kinematic_chain* Chain)
         //edges end
     }
 
-    if(!not_empty)
-        build_chain_vertices_cash();
-    else
-        rebuild_chain_vertices_cash();
+    build_chain_vertices_cash();
 
     scene_octree->cleanup();
     build_octree(100.0, false);
@@ -273,11 +267,33 @@ void Scene::recalc_IK_chain_model()
 
 }
 
+void Scene::build_object_vertices_cash(int i)
+{
+
+    Scene_objects[i].update_polys_cash();
+
+}
+
+void Scene::rebuild_object_vertices_cash(int i)
+{
+
+    Scene_objects[i].rebuild_polys_cash();
+
+}
+
 void Scene::build_object_vertices_cash()
 {
     for(int i = chain_links_n; i < Scene_objects.size(); i++)
     {
         Scene_objects[i].update_polys_cash();
+    }
+}
+
+void Scene::rebuild_object_vertices_cash()
+{
+    for(int i = chain_links_n; i < Scene_objects.size(); i++)
+    {
+        Scene_objects[i].rebuild_polys_cash();
     }
 }
 
@@ -303,9 +319,12 @@ bool Scene::detect_all_collisions()
 
     emit dc_start_process();
 
+    QVector3D inters_point;
+    int figure_id;
+
     for(int i = 0; i < chain_links_n; i++)
     {
-        res = collision_detect_octree(i, Scene_objects);
+        res = collision_detect_octree(i, Scene_objects, inters_point, figure_id);
         if(res) break;
     }
 
@@ -561,9 +580,9 @@ bool Scene::collision_detect(int part_id, QVector<figure> &figures)
 }
 
 
-bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
+bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVector3D &inters_point, int &figure_id)
 {
-    QVector3D inters_point;
+    //QVector3D inters_point;
     QVector3D p1,p2,pa,pb,pc;
 
     /*for(int p = 0; p < figures[part_id].polys.size();p++) //edges
@@ -652,6 +671,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
                                 //draw_collision_box(inters_point);
 
                                 //qDebug("collision");
+                                figure_id = current_node->polys()[i]->figure_id;
                                 return true;
                             }
                         }
@@ -676,7 +696,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
 
             }
 
-            if (octree_traverse(p1, p2, *current_node, inters_point))
+            if (octree_traverse(p1, p2, *current_node, inters_point, figure_id))
                 return true;
 
             // octree
@@ -694,7 +714,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures)
 
 }
 
-bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point)
+bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point, int &figure_id)
 {
     for( int i = 0; i < node.polys().size();i++ )//проверка полигонов в ноде
     {
@@ -716,6 +736,7 @@ bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVec
             b1->model=matr;
             b1->draw();*/
             //qDebug("collision");
+            figure_id = node.polys()[i]->figure_id;
             return true;
         }
     }
@@ -723,14 +744,14 @@ bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVec
 
     for( int i = 0; i < node.children().size(); i++ ) // проверка потомков ноды
     {
-        if(octree_traverse(p1, p2, *node.children()[i], inters_point ))
+        if(octree_traverse(p1, p2, *node.children()[i], inters_point, figure_id ))
             return true;
     }
 
     return false;
 }
 
-bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures)
+bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures, QVector3D &inters_point)
 {
     /*
       //1 var
@@ -799,7 +820,6 @@ bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure
     return false;
     */
 
-    QVector3D inters_point;
     QVector3D p1,p2,pa,pb,pc;
 
     figure& f = figures[part_id];
@@ -952,7 +972,46 @@ bool Scene::direct_collision_detect(int part_id,int test_part_id, QVector<figure
     return false;
 }
 
+bool Scene::direct_collision_detect_closest_to_point(int part_id,int test_part_id, QVector<figure> &figures, QVector3D &inters_point, QVector3D point)
+{
+    QVector3D p1, p2, pa, pb, pc, temp_inters_point;
 
+    figure& f = figures[part_id];
+    figure& ft = figures[test_part_id];
+
+    int e_size = figures[part_id].edges.size();
+
+    int t_size = figures[test_part_id].polys.size();
+
+    bool intersect = false;
+    float min_length = 1000000;
+
+    for(int p = 0; p < e_size; p++)
+    {
+        p1 = f.edges[p].A;
+        p2 = f.edges[p].B;
+
+        for(int i = 0; i < t_size; i++)
+        {
+            polygon& p = ft.polys[i];
+
+            pa = p.vertices[0];
+            pb = p.vertices[1];
+            pc = p.vertices[2];
+
+            if(poly_intersect(p1, p2, pa, pb, pc, temp_inters_point))
+            {
+                if(min_length > (temp_inters_point - point).length())
+                {
+                    inters_point = temp_inters_point;
+                    min_length = (temp_inters_point - point).length();
+                }
+                intersect = true;
+            }
+        }
+    }
+    return intersect;
+}
 
 
 int Scene::poly_intersect( QVector3D l1, QVector3D l2, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point )
@@ -997,6 +1056,17 @@ void Scene::build_octree(double boundingBoxSize, bool for_chain)
     else
         chain_octree->build(Scene_objects, chain_links_n,QVector3D(-boundingBoxSize/2.0 , -boundingBoxSize/2.0, -boundingBoxSize/2.0), QVector3D(boundingBoxSize/2.0 , boundingBoxSize/2.0, boundingBoxSize/2.0), for_chain);
 
+}
+
+void Scene::update_polys_id()
+{
+    for(int i = chain_links_n; i < Scene_objects.size() ; i++)
+    {
+        for(int j = 0; j < Scene_objects[i].polys.size(); j++)
+        {
+            Scene_objects[i].polys[j].figure_id = i;
+        }
+    }
 }
 
 void direct_collision_Thread::run()

@@ -16,7 +16,7 @@ public:
 
     void setshaderprog(QGLShaderProgram* new_prog)
     {
-        program=new_prog;
+        program = new_prog;
     }
 
     void draw(Camera *cam,double aspect_ratio)
@@ -29,7 +29,7 @@ public:
 
           for(int i=0;i<16;i++)
           {
-           vgl[i]=(float)(*(view.data()+i));
+            vgl[i]=(float)(*(view.data()+i));
           }
 
           glClear(GL_DEPTH_BUFFER_BIT);

@@ -6,8 +6,6 @@ void figure::draw()
     program->setUniformValue("material", material);
     program->setUniformValue("without_texture",without_texture);
 
-
-
     program->setAttributeArray
     (0, vertices.constData());
     program->setAttributeArray
@@ -16,8 +14,6 @@ void figure::draw()
     (2, normals.constData());
 
     glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-
-
 
     if (selected)
     {
@@ -74,14 +70,17 @@ void figure::rebuild_polys_cash()
 
 void figure::set_model_matrix(QVector3D pos, QVector3D scale)
 {
-    model.setToIdentity();
-    model.translate(pos);
+    translate_model.setToIdentity();
+    translate_model.translate(pos);
 
     rot_scale_model.setToIdentity();
 
     rot_scale_model.scale(scale);
 
-    model = model * rot_scale_model;
+    model = translate_model * rot_scale_model;
 }
 
-
+void figure::update_model_matrix()
+{
+    model = translate_model * rot_scale_model;
+}

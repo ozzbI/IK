@@ -96,7 +96,7 @@ void main(void)
         {
             for( int j = -1; j <= 1; j++ )
             {
-                z = texture(shadowMap, vec_to_light.xyz + vec_to_lihgt_shift_i * i + vec_to_lihgt_shift_j * j );
+                z = (texture(shadowMap, vec_to_light.xyz + vec_to_lihgt_shift_i * i + vec_to_lihgt_shift_j * j )).r;
                 z = zFar * zNear / (z * (zFar - zNear) - zFar);
                 z = length(view_vec * z);
                 if(z < length(pos - light_pos ) - bias) visibility += 1.0;

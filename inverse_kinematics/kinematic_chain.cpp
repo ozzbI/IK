@@ -19,6 +19,7 @@ kinematic_chain::kinematic_chain()
     Force_normalizing = true;
     rot_max_Force = false;
     max_Force_id = 0;
+    root_selected = false;
 
     TARGET_ACTIVATED = 1;
     ELASTIC_GLOBAL = 1;
@@ -36,7 +37,7 @@ void kinematic_chain::draw_chain()
 
     int chain_size=links.size();
 
-    for (int i=0;i<chain_size;i++)
+    for (int i=0; i<chain_size; i++)
     {
         QMatrix4x4 identity;
         //рисуется кость
@@ -72,13 +73,31 @@ void kinematic_chain::draw_chain()
             base_scale=identity;
             base_scale.scale(2,2,0.2);
             link_box.model=translate_mat * local_trans*base_trans*base_scale*box_shift_mat_2;
-            link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
+
+            if(root_selected)
+            {
+                link_box.set_material(QVector4D(0.7,0.0,0.0,1.0));
+            }
+            else
+            {
+                link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
+            }
+
             link_box.draw();
 
             base_scale=identity;
             base_scale.scale(0.5,0.5,2.0);
             link_box.model=translate_mat * local_trans*base_scale*box_shift_mat_2;
-            link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
+
+            if(root_selected)
+            {
+                link_box.set_material(QVector4D(0.7,0.0,0.0,1.0));
+            }
+            else
+            {
+                link_box.set_material(QVector4D(0.7,0.7,0.7,1.0));
+            }
+
             link_box.draw();
         }
         //рисуется основние елси кость телескопическая
@@ -792,17 +811,22 @@ void kinematic_chain::enable_telescopic(int id,bool state,double min_l,double ma
 
 void kinematic_chain::set_Force_normalizing(bool state)
 {
-    Force_normalizing=state;
+    Force_normalizing = state;
+}
+
+void kinematic_chain::set_max_Force_rotation(bool state)
+{
+    rot_max_Force = state;
 }
 
 void kinematic_chain::set_subtype(int id,int state)
 {
-    links[id]->subtype=state;
+    links[id]->subtype = state;
 }
 
 void kinematic_chain::set_ret_Force_K(int id,double new_K)
 {
-    links[id]->ret_Force_K=new_K;
+    links[id]->ret_Force_K = new_K;
 }
 
 void kinematic_chain::set_aa_limiter(int id,double a,Vector3d ang_ax)

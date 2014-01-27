@@ -11,6 +11,8 @@ public:
 
     QVector<QVector3D> vertices;
 
+    int figure_id; //for box selection
+
 
     polygon()
     {

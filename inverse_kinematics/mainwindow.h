@@ -3,7 +3,8 @@
 
 #include <QMainWindow>
 #include "glwidget.h"
-#include <joint_choise.h>
+#include "joint_choise.h"
+#include "addboxdialog.h"
 #include <QFile>
 #include <QFileDialog>
 
@@ -29,13 +30,41 @@ private:
 
     Ui::MainWindow *ui;
     joint_choise* jc;
+    AddBoxDialog* addBoxDialog;
     QDoubleValidator* start_param_validator;
     bool ctrl_pressed;
+
     QMenu *mnFile;
     QMenu *mnSceneObjects;
     QMenu *mnGraphic;
+    QMenu *mnObstaclesAvoiding;
+    QMenu *mnPathFinding;
+    QMenu *mnChainOptions;
+
     QAction *ssaoAct;
     QAction *shadowsAct;
+    QAction *edgesAct;
+
+    QAction *openChainAct;
+    QAction *saveChainAct;
+    QAction *openSceneAct;
+    QAction *saveSceneAct;
+    QAction *exitAct;
+
+    QAction *addBoxAct;
+    QAction *deleteBoxAct;
+    QAction *redactSceneAct;
+    QAction *selectMoveAct;
+
+    QAction *geometryRepulsion;
+    QAction *targetShift;
+
+    QAction *findPathToTarget;
+    QAction *showPathToTarget;
+    QAction *moveEffectorToTarget;
+
+    QAction *forceNormAct;
+    QAction *moveMaxForce;
 
 signals:
     void rotate_link(int id,double yaw,double pitch,double roll);
@@ -62,7 +91,9 @@ private slots:
     void on_add_link_but_clicked();
     void on_red_link_but_clicked();
     void on_save_to_file_but_clicked();
-    void on_opne_file_but_clicked();
+    void on_open_file_but_clicked();
+    void on_save_scene_to_file_but_clicked();
+    void on_open_scene_file_but_clicked();
     void set_max_link();
     void on_vel_slider_actionTriggered(int action);
     void on_Target_Activated_checkbox_clicked(bool checked);
@@ -70,7 +101,14 @@ private slots:
     void on_Target_Activated_checkbox_stateChanged(int arg1);
     void on_elastic_joints_checkbox_stateChanged(int arg1);
     void on_ssao_changed(bool state);
-    void on_shadows_changed(bool state);
+    void on_shadows_changed(bool state);    
+    void on_draw_edges_changed(bool state);
+    void create_add_box_dialog();
+    void on_redact_scene();
+    void on_select_move(bool state);
+    void delete_box();
+    void set_force_normalizing(bool state);
+    void set_max_force_rotation(bool state);
 
     //menu
     void createActions();

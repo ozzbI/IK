@@ -437,6 +437,7 @@ KChain.add_effector(5,1,target_for_effector);
 
 
 
+    selected_object_id = 0; // 0 - no one object selected
 // FBO init
 
     makeCurrent();
@@ -465,6 +466,19 @@ KChain.add_effector(5,1,target_for_effector);
     scren_plane_tex_coord.push_back(QVector2D(0.0, 0.0));
     scren_plane_tex_coord.push_back(QVector2D(0.0, 1.0));
     scren_plane_tex_coord.push_back(QVector2D(1.0, 1.0));
+
+    //axis
+
+    edge axis_edge;
+    axis_edge.A = QVector3D(0.0, 0.0, 0.0);
+    axis_edge.B = QVector3D(1.0, 0.0, 0.0);
+    box_axis.edges.push_back(axis_edge);
+    axis_edge.A = QVector3D(0.0, 0.0, 0.0);
+    axis_edge.B = QVector3D(0.0, 1.0, 0.0);
+    box_axis.edges.push_back(axis_edge);
+    axis_edge.A = QVector3D(0.0, 0.0, 0.0);
+    axis_edge.B = QVector3D(0.0, 0.0, 1.0);
+    box_axis.edges.push_back(axis_edge);
 }
 
 GLWidget::~GLWidget()
@@ -766,6 +780,30 @@ void GLWidget::initializeGL()
 
     // build_shadow_program link end --------------------------
 
+    // line shader program
+
+    vshader = new QGLShader(QGLShader::Vertex, this);
+
+    vshader->compileSourceFile(QLatin1String(":/shaders/line.vert"));
+
+    fshader = new QGLShader(QGLShader::Fragment, this);
+
+    fshader->compileSourceFile(QLatin1String(":/shaders/line.frag"));
+
+    line_program = new QGLShaderProgram(this);
+    line_program->addShader(vshader);
+    line_program->addShader(fshader);
+    line_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    line_program->link();
+
+    line_program->bind();
+
+    line_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+
+    line_program->setUniformValue("material", QVector4D(1.0,1.0,1.0,1));
+
+    // line shader program link end --------------------------
+
     // Main shader program
 
     vshader = new QGLShader(QGLShader::Vertex, this);
@@ -804,6 +842,9 @@ void GLWidget::initializeGL()
 
 
     // Main shader program link end --------------------------
+
+
+
 
     coordinate_axis.setshaderprog(program);
     //scene_box
@@ -940,6 +981,14 @@ void GLWidget::initializeGL()
 
     ssao = true;
     shadows = true;
+    draw_edges = false;
+    move_rotate_object = false;
+    redact_scene_mode = false;
+    move_box = false;
+
+    current_axis_state = xPlane;
+
+    movement_precision = 10.0;
 
     //shadow fbo init
     set_lp(QVector4D(0,20,0,0));
@@ -960,7 +1009,7 @@ void GLWidget::paintGL()
     if(!(stop_proc||main_stop)) //move chain and detect collision
     {
         KChain.backup_links();
-        KChain.rotation_cycle(10, 0.01 * move_vel);
+        KChain.rotation_cycle(movement_precision, 0.1 / movement_precision * move_vel);
 
         //scene objects
         scene->recalc_IK_chain_model();
@@ -977,7 +1026,11 @@ void GLWidget::paintGL()
             if(KChain.collision)
             {
                 KChain.collision = false;
+
             }
+            //chain movement test
+            //KChain.links[0]->global_position += Vector3d(0.01,0.01,0.01);
+            //KChain.glob_pos_recalc(1,0);
         }
     }
 
@@ -1024,6 +1077,10 @@ void GLWidget::paintGL()
     */
 
     //----------main scene
+
+    line_program->bind();
+    line_program->setUniformValue("view_matrix", v);
+
     program->bind();
 
     main_scene_fbo_sampled->bind();
@@ -1067,7 +1124,40 @@ void GLWidget::paintGL()
     scene->draw_objects();
 
     //scene->draw_polys(); //debug
-    //scene->draw_edges(); //debug
+
+    if(draw_edges)
+    {
+        program->setUniformValue("ambient", QVector4D(0.0,0.0,0.0,1));
+        scene->draw_edges(); //debug
+        program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1));
+    }
+
+    if(selected_object_id)//box axes drawning
+    {
+        line_program->bind();
+
+        scene->Scene_objects[selected_object_id].draw_edges(line_program, QVector4D(1.0,1.0,1.0,1.0));
+
+        box_axis.set_model_matrix(scene->Scene_objects[selected_object_id].get_edge_center(), QVector3D(1.0,1.0,1.0));
+
+        if(current_axis_state == xPlane)
+        {
+            box_axis.draw_edge(line_program,QVector4D(0.0,1.0,0.0,1.0),1);
+            box_axis.draw_edge(line_program,QVector4D(0.0,0.0,1.0,1.0),2);
+        }
+        else if(current_axis_state == yPlane)
+        {
+            box_axis.draw_edge(line_program,QVector4D(1.0,0.0,0.0,1.0),0);
+            box_axis.draw_edge(line_program,QVector4D(0.0,0.0,1.0,1.0),2);
+        }
+        else if(current_axis_state == zPlane)
+        {
+            box_axis.draw_edge(line_program,QVector4D(1.0,0.0,0.0,1.0),0);
+            box_axis.draw_edge(line_program,QVector4D(0.0,1.0,0.0,1.0),1);
+        }
+
+        program->bind();
+    }
 
     //scene_box
     glCullFace(GL_FRONT);
@@ -1143,6 +1233,9 @@ void GLWidget::resizeGL(int width, int height)
     program->bind();
     program->setUniformValue("proj_matrix", p);
 
+    line_program->bind();
+    line_program->setUniformValue("proj_matrix", p);
+
     ssao_build_norm_program->bind();
     ssao_build_norm_program->setUniformValue("proj_matrix", p);
 
@@ -1200,44 +1293,151 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     lastPos = event->pos();
 
-    //трассировка сферы
+    QPoint mouse_ccord = event->pos();
+
     if (event->buttons() & Qt::LeftButton)
     {
-        QVector3D Qp,Qpos,C;
-        QPoint mouse_ccord=event->pos();
-        Vector3d p;       
-        double ang_x,ang_y;
+        double ang_x, ang_y;
 
         ang_x=((view_angle/2.0)/180.0)*M_PI;
         ang_y=(view_angle/2.0)/180.0*M_PI;
         ang_x=tan(ang_x);
         ang_y=tan(ang_y);
 
-        p=cam.getPosition()-cam.getLook()+
-                cam.getRight()*(((double)mouse_ccord.x()-(double)w/2.0)/((double)w/2.0))*ang_x*aspect_ratio
-                +cam.getUp()*((-(double)mouse_ccord.y()+(double)h/2.0)/((double)h/2.0))*ang_y;
-
-        Qp=QVector3D(p.x(),p.y(),p.z());
-
-        Qpos=QVector3D(cam.getPosition().x(),cam.getPosition().y(),cam.getPosition().z());
-
-        C=QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
-
-        //a=Qpos;
-        Qp=Qp-Qpos;
-        //b=Qpos+Qp*40;
-        Qp.normalize();
-
-        if(sphere_intersect(Qpos,Qp,C,0.4)) //увеличил радиус расчётной сферы
+        if(redact_scene_mode) //трассировка боксов
         {
-            sph1->set_material(QVector4D(1.0,0.0,0.0,1.0));
-            if(target_selected) move_target=true;
-            else target_selected=true;
+            QVector3D Qp, Qpos;
+            Vector3d p;
+            figure ray_figure;
+            edge ray_edge;
+
+            p = cam.getPosition() - cam.getLook()+
+                    cam.getRight()*(((double)mouse_ccord.x()-(double)w/2.0)/((double)w/2.0))*ang_x*aspect_ratio
+                    +cam.getUp()*((-(double)mouse_ccord.y()+(double)h/2.0)/((double)h/2.0))*ang_y;
+
+            Qp = QVector3D(p.x(),p.y(),p.z());
+
+            ray_edge.A = QVector3D(cam.getPosition().x(),cam.getPosition().y(),cam.getPosition().z());
+
+            Qp = Qp - ray_edge.A;
+
+            ray_edge.B = ray_edge.A + Qp * 300.0;
+
+
+            ray_figure.edges.push_back(ray_edge);
+
+
+            scene->Scene_objects.push_back(ray_figure);
+
+            QVector3D intersect_point;
+            float min_length = 1000000;
+            bool is_object_selected = false;
+            int old_selected_object_id = selected_object_id;
+
+            for(int i = scene->chain_links_n; i < scene->Scene_objects.size() - 1; i++)
+            {
+                if ( scene->direct_collision_detect_closest_to_point(scene->Scene_objects.size() - 1, i, scene->Scene_objects, intersect_point, QVector3D(p.x(),p.y(),p.z())) )
+                {
+                    if(min_length > (intersect_point - ray_edge.A).length())
+                    {
+                        selected_object_id = i;
+                        min_length = (intersect_point - ray_edge.A).length();
+                        is_object_selected = true;
+                    }
+                }
+            }
+
+            box_intersect_point = intersect_point;
+            box_intersect_point_vec = scene->Scene_objects[selected_object_id].get_edge_center() - intersect_point;
+
+            if(!is_object_selected)
+                selected_object_id = 0;
+
+            if(selected_object_id == old_selected_object_id && old_selected_object_id !=0 )
+                move_box = true;
+            else
+                move_box = false;
+
+            scene->Scene_objects.pop_back();
+
+            if(selected_object_id)//box axes (need function)
+            {
+
+                QVector3D box_center = scene->Scene_objects[selected_object_id].get_edge_center();
+
+                QVector3D cam_pos = QVector3D(cam.getPosition().x(), cam.getPosition().y(), cam.getPosition().z());
+
+                QVector3D view_vec = (box_center - cam_pos).normalized();
+
+                float cos45 = 1.0/sqrt(2.0);
+
+                if(QVector3D::dotProduct(view_vec,QVector3D(1.0,0.0,0.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(-1.0,0.0,0.0)) > cos45)
+                {
+                    current_axis_state = xPlane;
+                    current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(1.0,0.0,0.0));
+                }
+                else if(QVector3D::dotProduct(view_vec,QVector3D(0.0,1.0,0.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(0.0,-1.0,0.0)) > cos45 )
+                {
+                    current_axis_state = yPlane;
+                    current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(0.0,1.0,0.0));
+                }
+                else if(QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,1.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,-1.0)) > cos45 )
+                {
+                    current_axis_state = zPlane;
+                    current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,1.0));
+                }
+
+                if(current_axis_sign > 0)
+                    current_axis_sign = 1.0;
+                else
+                    current_axis_sign = -1.0;
+
+            }
+
         }
-        else
+        else //трассировка сферы
         {
-            sph1->set_material(QVector4D(0.4,1,0.5,1));
-            target_selected=false;
+            QVector3D Qp,Qpos,C,C_root;
+
+            Vector3d p;
+
+            p=cam.getPosition()-cam.getLook()+
+                    cam.getRight()*(((double)mouse_ccord.x()-(double)w/2.0)/((double)w/2.0))*ang_x*aspect_ratio
+                    +cam.getUp()*((-(double)mouse_ccord.y()+(double)h/2.0)/((double)h/2.0))*ang_y;
+
+            Qp = QVector3D(p.x(),p.y(),p.z());
+
+            Qpos = QVector3D(cam.getPosition().x(),cam.getPosition().y(),cam.getPosition().z());
+
+            C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+
+
+            C_root = QVector3D(KChain.links[0]->global_position.x(),KChain.links[0]->global_position.y(),KChain.links[0]->global_position.z());
+
+            //a=Qpos;
+            Qp = Qp - Qpos;
+            //b=Qpos+Qp*40;
+            Qp.normalize();
+
+            if(sphere_intersect(Qpos,Qp,C,0.4)) //увеличил радиус расчётной сферы
+            {
+                sph1->set_material(QVector4D(1.0,0.0,0.0,1.0));
+                if(target_selected) move_target = true;
+                else target_selected = true;
+            }
+            else if((sphere_intersect(Qpos,Qp,C_root,0.8)))
+            {
+                KChain.root_selected = true;
+                if(root_selected) move_root = true;
+                else root_selected = true;
+            }
+            else
+            {
+                sph1->set_material(QVector4D(0.4,1,0.5,1));
+                KChain.root_selected = false;
+                target_selected = false;
+                root_selected = false;
+            }
         }
     }
 }
@@ -1247,43 +1447,52 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     int dx = event->x() - lastPos.x();
     int dy = event->y() - lastPos.y();
     //движение цели
-    if(move_target)
+    double ang_x,ang_y;
+    QVector3D Qp;
+    Vector3d p;
+    QPoint mouse_coord = event->pos();
+
+    ang_x=((view_angle/2.0)/180.0)*M_PI;
+    ang_y=(view_angle/2.0)/180.0*M_PI;
+    ang_x=tan(ang_x);
+    ang_y=tan(ang_y);
+
+    p = cam.getPosition()-cam.getLook()+
+            cam.getRight()*(((double)mouse_coord.x()-(double)w/2.0)/((double)w/2.0))*ang_x*aspect_ratio
+            +cam.getUp()*((-(double)mouse_coord.y()+(double)h/2.0)/((double)h/2.0))*ang_y;
+
+    Qp = QVector3D(p.x(),p.y(),p.z());
+
+    if(move_target || move_root)
     {
         if (event->buttons() & Qt::LeftButton)
         {
-            QVector3D Qp,Qpos,new_target,up,right,dir,C;
-            QPoint mouse_ccord=event->pos();
-            Vector3d p;
-            double ang_x,ang_y;
+            QVector3D Qpos,new_target,up,right,dir,C;
 
-            ang_x=((view_angle/2.0)/180.0)*M_PI;
-            ang_y=(view_angle/2.0)/180.0*M_PI;
-            ang_x=tan(ang_x);
-            ang_y=tan(ang_y);
+            Qpos = QVector3D(cam.getPosition().x(), cam.getPosition().y(), cam.getPosition().z());
+            up = QVector3D(cam.getUp().x(), cam.getUp().y(), cam.getUp().z());
+            right = QVector3D(cam.getRight().x(), cam.getRight().y(), cam.getRight().z());
+            dir = QVector3D(cam.getLook().x(), cam.getLook().y(), cam.getLook().z());
 
-            p=cam.getPosition()-cam.getLook()+
-                    cam.getRight()*(((double)mouse_ccord.x()-(double)w/2.0)/((double)w/2.0))*ang_x*aspect_ratio
-                    +cam.getUp()*((-(double)mouse_ccord.y()+(double)h/2.0)/((double)h/2.0))*ang_y;
-
-            Qp=QVector3D(p.x(),p.y(),p.z());
-
-            Qpos=QVector3D(cam.getPosition().x(),cam.getPosition().y(),cam.getPosition().z());
-            up=QVector3D(cam.getUp().x(),cam.getUp().y(),cam.getUp().z());
-            right=QVector3D(cam.getRight().x(),cam.getRight().y(),cam.getRight().z());
-            dir=QVector3D(cam.getLook().x(),cam.getLook().y(),cam.getLook().z());
-
-            Qp=Qp-Qpos;
+            Qp = Qp - Qpos;
 
             Qp.normalize();
 
-            C=QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+            if(move_target)
+            {
+                C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+            }
+            else if(move_root)
+            {
+                C = QVector3D(KChain.links[0]->global_position.x(),KChain.links[0]->global_position.y(),KChain.links[0]->global_position.z());
+            }
 
             if(ctrl_pressed)//плоскость перп камере
             {
                 /*poly_intersect(Qpos,Qp,C+dir*10000
                            ,C-right*10000,C-dir*10000+right*10000
                            ,new_target);*/
-                new_target=C+dir*0.1*(double)dy;
+                new_target = C + dir*0.1*(double)dy;
             }
             else//плоскость параллельная камере
             {
@@ -1292,13 +1501,91 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                            ,new_target);
             }
 
-            KChain.effectors[0].target.x()=new_target.x();
-            KChain.effectors[0].target.y()=new_target.y();
-            KChain.effectors[0].target.z()=new_target.z();
+            if(move_target)
+            {
+                KChain.effectors[0].target.x() = new_target.x();
+                KChain.effectors[0].target.y() = new_target.y();
+                KChain.effectors[0].target.z() = new_target.z();
+            }
+            else if(move_root)
+            {
+                KChain.links[0]->global_position.x() = new_target.x();
+                KChain.links[0]->global_position.y() = new_target.y();
+                KChain.links[0]->global_position.z() = new_target.z();
+                KChain.glob_pos_recalc(1,0);
+                KChain.collision = false;
+            }
         }
-        lastPos = event->pos();
     }
-    else
+    else if(move_box)
+    {
+        if (event->buttons() & Qt::LeftButton)
+        {
+            if(!move_rotate_object) //translate box
+            {
+                QVector3D Qpos,new_pos,up,right,dir,C;
+
+                Qpos = QVector3D(cam.getPosition().x(), cam.getPosition().y(), cam.getPosition().z());
+
+                if(current_axis_state == xPlane)
+                {
+                    up = QVector3D(0.0,1.0,0.0);
+                    right = QVector3D(0.0,0.0,1.0);
+                }
+                else if(current_axis_state == yPlane)
+                {
+                    up = QVector3D(0.0,0.0,1.0);
+                    right = QVector3D(1.0,0.0,0.0);
+                }
+                else if(current_axis_state == zPlane)
+                {
+                    up = QVector3D(1.0,0.0,0.0);
+                    right = QVector3D(0.0,1.0,0.0);
+                }
+
+                Qp = Qp - Qpos;
+
+                Qp.normalize();
+
+                C = box_intersect_point;
+
+                poly_intersect(Qpos, Qp, C - right*10000 - up*10000
+                           , C + right*10000,C + up*10000
+                           , new_pos);
+
+                scene->Scene_objects[selected_object_id].translate_model.setToIdentity();
+                scene->Scene_objects[selected_object_id].translate_model.translate(new_pos + box_intersect_point_vec);
+                scene->Scene_objects[selected_object_id].update_model_matrix();
+                scene->Scene_objects[selected_object_id].rebuild_polys_cash();
+            }
+            else //rotate box
+            {
+                QVector3D rot_axis;
+
+                if(current_axis_state == xPlane)
+                {
+                    rot_axis = QVector3D(1.0,0.0,0.0);
+                }
+                else if(current_axis_state == yPlane)
+                {
+                    rot_axis = QVector3D(0.0,1.0,0.0);
+                }
+                else if(current_axis_state == zPlane)
+                {
+                    rot_axis = QVector3D(0.0,0.0,1.0);
+                }
+
+                QMatrix4x4 rot_matr;
+                rot_matr.rotate((float)(current_axis_sign*dx + current_axis_sign*dy)/3.0, rot_axis);
+
+
+                scene->Scene_objects[selected_object_id].rot_scale_model = rot_matr * scene->Scene_objects[selected_object_id].rot_scale_model;
+                scene->Scene_objects[selected_object_id].update_model_matrix();
+                scene->Scene_objects[selected_object_id].rebuild_polys_cash();
+            }
+        }
+    }
+    else //camera move
     {
         if(!cam.scene_view)
         {
@@ -1313,17 +1600,60 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         }
         else
         {
-            if (event->buttons() & Qt::LeftButton) {
+            if ((event->buttons() & Qt::LeftButton) || (event->buttons() & Qt::RightButton)) {
                 cam.rot_cam(dy/100.0f,-dx/100.0f,0);
             }
         }
-        lastPos = event->pos();
+
+        if(selected_object_id)//box axes
+        {
+
+            QVector3D box_center = scene->Scene_objects[selected_object_id].get_edge_center();
+
+            QVector3D cam_pos = QVector3D(cam.getPosition().x(), cam.getPosition().y(), cam.getPosition().z());
+
+            QVector3D view_vec = (box_center - cam_pos).normalized();
+
+            float cos45 = 1.0/sqrt(2.0);
+
+            if(QVector3D::dotProduct(view_vec,QVector3D(1.0,0.0,0.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(-1.0,0.0,0.0)) > cos45)
+            {
+                current_axis_state = xPlane;
+                current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(1.0,0.0,0.0));
+            }
+            else if(QVector3D::dotProduct(view_vec,QVector3D(0.0,1.0,0.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(0.0,-1.0,0.0)) > cos45 )
+            {
+                current_axis_state = yPlane;
+                current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(0.0,1.0,0.0));
+            }
+            else if(QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,1.0)) > cos45 || QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,-1.0)) > cos45 )
+            {
+                current_axis_state = zPlane;
+                current_axis_sign = QVector3D::dotProduct(view_vec,QVector3D(0.0,0.0,1.0));
+            }
+
+            if(current_axis_sign > 0)
+                current_axis_sign = 1.0;
+            else
+                current_axis_sign = -1.0;
+
+        }
+
     }
+
+    lastPos = event->pos();
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent * /* event */)
 {
-    if(move_target)move_target=false;
+    if(move_target)
+        move_target = false;
+
+    if(move_root)
+        move_root = false;
+
+    move_box = false;
+
     emit clicked();
 }
 
@@ -1352,41 +1682,40 @@ void GLWidget::draw_collision_box(QVector3D collision_point)
 
 float GLWidget::poly_intersect( QVector4D origin_in, QVector4D direction_in, QVector4D p0_in, QVector4D p1_in, QVector4D p2_in,QVector4D& res_point )
 {
-  QVector3D origin,direction,p0,p1,p2;
-  origin=(QVector3D)origin_in;
-  direction=(QVector3D)direction_in;
-  p0=(QVector3D)p0_in;
-  p1=(QVector3D)p1_in;
-  p2=(QVector3D)p2_in;
+    QVector3D origin,direction,p0,p1,p2;
+    origin=(QVector3D)origin_in;
+    direction=(QVector3D)direction_in;
+    p0=(QVector3D)p0_in;
+    p1=(QVector3D)p1_in;
+    p2=(QVector3D)p2_in;
 
-  float result;
+    float result;
 
-  QVector3D e1 = p1 - p0;
-  QVector3D e2 = p2 - p0;
+    QVector3D e1 = p1 - p0;
+    QVector3D e2 = p2 - p0;
 
-  p0 = origin - p0;
+    p0 = origin - p0;
 
-  QVector3D P = QVector3D::crossProduct( direction , e2 );
+    QVector3D P = QVector3D::crossProduct( direction , e2 );
 
-  float  det =  QVector3D::dotProduct( P , e1 );
+    float  det =  QVector3D::dotProduct( P , e1 );
 
-  if( det == 0.0 )
+    if( det == 0.0 )
     return -1000000.0;
 
-  float u = QVector3D::dotProduct( P , p0 ) / det;
+    float u = QVector3D::dotProduct( P , p0 ) / det;
 
-  P = QVector3D::crossProduct( p0 , e1 );
+    P = QVector3D::crossProduct( p0 , e1 );
 
-  float w = QVector3D::dotProduct( P , direction ) / det ;
+    float w = QVector3D::dotProduct( P , direction ) / det ;
 
-  if( u + w > 1 || w < 0 || u < 0 )
+    if( u + w > 1 || w < 0 || u < 0 )
     return 1000000.0;
 
 
-  result=QVector3D::dotProduct( P , e2 ) / det;
-  res_point=(QVector4D(origin+direction*result,1));
-  return result;
-
+    result=QVector3D::dotProduct( P , e2 ) / det;
+    res_point=(QVector4D(origin+direction*result,1));
+    return result;
 }
 
 float GLWidget::poly_intersect( QVector3D origin, QVector3D direction, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point )
@@ -1759,4 +2088,22 @@ void GLWidget::set_shadows(bool state)
         program->bind();
         program->setUniformValue("shadows", 0);
     }
+}
+
+void GLWidget::add_box_scene(QVector3D pos,QVector3D scale, QVector3D color)
+{
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(color, 1.0));
+    scene->Scene_objects[ scene->Scene_objects.size() - 1].set_model_matrix(pos, scale);
+    scene->build_object_vertices_cash( scene->Scene_objects.size() - 1);
+    scene->update_polys_id();
+}
+
+void GLWidget::add_box_scene(QMatrix4x4 &rot_scale_matr, QMatrix4x4 &translate_matr, QVector4D &material)
+{
+    scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, material);
+    scene->Scene_objects[ scene->Scene_objects.size() - 1].rot_scale_model = rot_scale_matr;
+    scene->Scene_objects[ scene->Scene_objects.size() - 1].translate_model = translate_matr;
+    scene->Scene_objects[ scene->Scene_objects.size() - 1].update_model_matrix();
+    scene->build_object_vertices_cash( scene->Scene_objects.size() - 1);
+    scene->update_polys_id();
 }

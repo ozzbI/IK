@@ -37,6 +37,10 @@ MainWindow::MainWindow(QWidget *parent) :
     //menu
     this->createActions();
     this->createMenus();
+
+    ui->opne_file_but->hide();
+    ui->save_to_file_but->hide();
+    ui->line_2->hide();
 }
 
 MainWindow::~MainWindow()
@@ -290,7 +294,7 @@ void MainWindow::on_del_link_but_clicked()
 
 void MainWindow::on_add_link_but_clicked()
 {
-    jc=new joint_choise();
+    jc = new joint_choise();
     jc->setModal(true);
     connect(jc,SIGNAL(set_max_link()),this,SLOT(set_max_link()));
     jc->set_scene(glw->scene);
@@ -360,7 +364,7 @@ void MainWindow::on_save_to_file_but_clicked()
     out<<"END";
 }
 
-void MainWindow::on_opne_file_but_clicked()
+void MainWindow::on_open_file_but_clicked()
 {
     bool f=false;
     int type,c=0,tel;
@@ -526,6 +530,124 @@ void MainWindow::on_opne_file_but_clicked()
 
 }
 
+void MainWindow::on_save_scene_to_file_but_clicked()
+{
+    QString fname;
+    fname = QFileDialog::getSaveFileName(this, tr("Save scene"),"",tr("Scene(*.scn)"));
+    if(fname.length() > 0)
+    {
+        QFile file(fname);
+        file.open(QIODevice::WriteOnly);
+        QTextStream out(&file);
+
+        QMatrix4x4 rot_scale;
+        QMatrix4x4 translate;
+        QVector4D material;
+
+        for(int b = glw->scene->chain_links_n; b < glw->scene->Scene_objects.size(); b++)
+        {
+
+            rot_scale = glw->scene->Scene_objects[b].rot_scale_model;
+            translate = glw->scene->Scene_objects[b].translate_model;
+            material = glw->scene->Scene_objects[b].material;
+
+            for(int i = 0; i < 4; i++)
+            {
+                QVector4D row = rot_scale.row(i);
+
+                for(int j = 0; j < 4; j++)
+                {
+                    out<<row[j]; out<<" ";
+                }
+            }
+
+            for(int i = 0; i < 4; i++)
+            {
+                QVector4D row = translate.row(i);
+
+                for(int j = 0; j < 4; j++)
+                {
+                    out<<row[j]; out<<" ";
+                }
+            }
+
+            for(int j = 0; j < 4; j++)
+            {
+                out<<material[j]; out<<" ";
+            }
+
+            out<<"\n";
+
+        }
+
+        out<<"END";
+    }
+}
+
+void MainWindow::on_open_scene_file_but_clicked()
+{
+    QString fname,buf;
+    fname = QFileDialog::getOpenFileName(this, tr("OpenFile"),"",tr("Scene(*.scn)"));
+    QFile file(fname);
+
+    QMatrix4x4 rot_scale;
+    QMatrix4x4 translate;
+    QVector4D material;
+    QVector4D row;
+
+    bool fail_flag = false;
+
+    file.open(QIODevice::ReadOnly);
+    QTextStream in(&file);
+
+    glw->scene->Scene_objects.remove(glw->scene->chain_links_n, glw->scene->Scene_objects.size() - glw->scene->chain_links_n);
+
+    do
+    {
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 4; j++)
+            {
+                in>>buf;
+                if(buf=="END") fail_flag = true;
+                row[j] = buf.toDouble();
+            }
+
+            rot_scale.setRow(i, row);
+        }
+
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 4; j++)
+            {
+                in>>buf;
+                if(buf=="END") fail_flag = true;
+                row[j] = buf.toDouble();
+            }
+
+            translate.setRow(i, row);
+        }
+
+        for(int j = 0; j < 4; j++)
+        {
+            in>>buf;
+            if(buf=="END") fail_flag = true;
+            row[j] = buf.toDouble();
+        }
+
+        material = row;
+
+        if(fail_flag) break;
+        //insert object
+        glw->add_box_scene(rot_scale, translate, material);
+    }
+    while(true);
+
+    glw->scene->scene_octree->cleanup();
+    glw->scene->build_octree(100.0, false);
+
+}
+
 void MainWindow::set_max_link()
 {
     ui->link->setMaximum(glw->KChain.get_size()-1);
@@ -571,6 +693,55 @@ void  MainWindow::createActions()
     shadowsAct->toggle();
     connect(shadowsAct,SIGNAL(toggled(bool)),this,SLOT(on_shadows_changed(bool)));
 
+    edgesAct = new QAction("рисовать грани объектов", this);
+    edgesAct->setCheckable(true);
+    connect(edgesAct,SIGNAL(toggled(bool)),this,SLOT(on_draw_edges_changed(bool)));
+
+    openChainAct = new QAction("Открыть файл цепи", this);
+    connect(openChainAct,SIGNAL(triggered()),this,SLOT(on_open_file_but_clicked()));
+
+    saveChainAct = new QAction("Сохранить цепь в файл", this);
+    connect(saveChainAct,SIGNAL(triggered()),this,SLOT(on_save_to_file_but_clicked()));
+
+    openSceneAct = new QAction("Открыть файл сцены", this);
+    connect(openSceneAct,SIGNAL(triggered()),this,SLOT(on_open_scene_file_but_clicked()));
+
+    saveSceneAct = new QAction("Сохранить сцену в файл", this);
+    connect(saveSceneAct,SIGNAL(triggered()),this,SLOT(on_save_scene_to_file_but_clicked()));
+
+    addBoxAct = new QAction("Добавить объект", this);
+    connect(addBoxAct,SIGNAL(triggered()),this,SLOT(create_add_box_dialog()));
+    addBoxAct->setEnabled(false);
+
+    deleteBoxAct = new QAction("Удалить объект", this);
+    connect(deleteBoxAct,SIGNAL(triggered()),this,SLOT(delete_box()));
+    deleteBoxAct->setEnabled(false);
+
+    redactSceneAct = new QAction("Режим редактирования сцены", this);
+    connect(redactSceneAct,SIGNAL(triggered()),this,SLOT(on_redact_scene()));
+    redactSceneAct->setCheckable(true);
+
+    selectMoveAct = new QAction("Перенос/Вращение", this);
+    connect(selectMoveAct,SIGNAL(toggled(bool)),this,SLOT(on_select_move(bool)));
+    selectMoveAct->setCheckable(true);
+
+    exitAct = new QAction("Выход", this);
+    connect(exitAct,SIGNAL(triggered()),this,SLOT(close()));
+
+    geometryRepulsion = new QAction("Отталкивание от препятсвий", this);
+    geometryRepulsion->setCheckable(true);
+
+    targetShift = new QAction("Сдвиг цели", this);
+    targetShift->setCheckable(true);
+
+    forceNormAct = new QAction("Нормализация действущей силы", this);
+    connect(forceNormAct,SIGNAL(toggled(bool)),this,SLOT(set_force_normalizing(bool)));
+    forceNormAct->setCheckable(true);
+
+    moveMaxForce = new QAction("Двигать звено с максимальным воздействием", this);
+    connect(moveMaxForce,SIGNAL(toggled(bool)),this,SLOT(set_max_force_rotation(bool)));
+    moveMaxForce->setCheckable(true);
+
 }
 
 void  MainWindow::createMenus()
@@ -578,13 +749,39 @@ void  MainWindow::createMenus()
     mnFile = new QMenu("Файл");
     mnSceneObjects = new QMenu("Сцена");
     mnGraphic = new QMenu("Графика");
+    mnObstaclesAvoiding = new QMenu("Обход препятсвий");
+    mnChainOptions = new QMenu("Насройки Цепи");
 
     ui->menuBar->addMenu(mnFile);
     ui->menuBar->addMenu(mnSceneObjects);
     ui->menuBar->addMenu(mnGraphic);
+    ui->menuBar->addMenu(mnObstaclesAvoiding);
+    ui->menuBar->addMenu(mnChainOptions);
+
+    mnFile->addAction(openChainAct);
+    mnFile->addAction(saveChainAct);
+    mnFile->addAction(openSceneAct);
+    mnFile->addAction(saveSceneAct);
+    mnFile->addAction(exitAct);
+
+
+    mnSceneObjects->addAction(addBoxAct);
+    mnSceneObjects->addAction(deleteBoxAct);
+    mnSceneObjects->addAction(redactSceneAct);
+    mnSceneObjects->addAction(selectMoveAct);
 
     mnGraphic->addAction(shadowsAct);
     mnGraphic->addAction(ssaoAct);
+    mnGraphic->addAction(edgesAct);
+
+    mnObstaclesAvoiding->addAction(geometryRepulsion);
+    mnObstaclesAvoiding->addAction(targetShift);
+
+    mnPathFinding = mnObstaclesAvoiding->addMenu(tr("Поиск Пути"));
+
+    mnChainOptions->addAction(forceNormAct);
+    mnChainOptions->addAction(moveMaxForce);
+
 }
 
 void MainWindow::on_ssao_changed(bool state)
@@ -595,4 +792,65 @@ void MainWindow::on_ssao_changed(bool state)
 void MainWindow::on_shadows_changed(bool state)
 {
     glw->set_shadows(state);
+}
+
+void MainWindow::create_add_box_dialog()
+{
+    addBoxDialog = new AddBoxDialog(glw);
+    addBoxDialog->setModal(true);
+    addBoxDialog->show();
+}
+
+void MainWindow::on_redact_scene()
+{
+    if(!deleteBoxAct->isEnabled())
+    {
+        deleteBoxAct->setEnabled(true);
+        addBoxAct->setEnabled(true);
+        if(!glw->stop_proc)
+            ui->stop_but->click();
+        ui->stop_but->setEnabled(false);
+        glw->redact_scene_mode = true;
+        glw->scene->update_polys_id();
+    }
+    else
+    {
+        glw->scene->scene_octree->cleanup();
+        glw->scene->build_octree(100.0, false);
+
+        deleteBoxAct->setEnabled(false);
+        addBoxAct->setEnabled(false);
+        ui->stop_but->setEnabled(true);
+        ui->stop_but->click();
+        glw->redact_scene_mode = false;
+        glw->selected_object_id = 0;
+    }
+}
+
+void MainWindow::on_select_move(bool state)
+{
+    glw->move_rotate_object = state;
+}
+
+void MainWindow::on_draw_edges_changed(bool state)
+{
+    glw->draw_edges = state;
+}
+
+void MainWindow::delete_box()
+{
+    if(glw->selected_object_id != 0)
+        glw->scene->Scene_objects.remove(glw->selected_object_id);
+
+    glw->selected_object_id = 0;
+}
+
+void MainWindow::set_force_normalizing(bool state)
+{
+    glw->KChain.set_Force_normalizing(state);
+}
+
+void MainWindow::set_max_force_rotation(bool state)
+{
+    glw->KChain.set_max_Force_rotation(state);
 }

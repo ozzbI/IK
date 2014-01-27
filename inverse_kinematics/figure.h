@@ -26,6 +26,7 @@ public:
 
     QMatrix4x4 model;
     QMatrix4x4 rot_scale_model;
+    QMatrix4x4 translate_model;
 
 
     QVector<QVector4D> vertices;
@@ -69,6 +70,7 @@ public:
     void update_polys_cash();
     void rebuild_polys_cash();
     void set_model_matrix(QVector3D pos, QVector3D scale);
+    void update_model_matrix();
 
 
 
@@ -91,7 +93,7 @@ public:
         QMatrix4x4 identity;
 
         program->setUniformValue("model_matrix", identity);
-        program->setUniformValue("material", QVector4D(1.0,1.0,1.0,1.0));
+        program->setUniformValue("material", QVector4D(0.0,0.0,0.0,0.0));
 
         for(int i=0;i<edges.size();i++)
         {
@@ -108,6 +110,63 @@ public:
 
             program->setUniformValue("selected", 0);
         }
+    }
+
+    void draw_edges(QGLShaderProgram *shader_program, QVector4D material)
+    {
+        QMatrix4x4 identity;
+
+        shader_program->setUniformValue("model_matrix", identity);
+        shader_program->setUniformValue("material", material);
+
+        for(int i=0;i<edges.size();i++)
+        {
+            QVector<QVector3D> v;
+            v.push_back(edges[i].A);
+            v.push_back(edges[i].B);
+
+            shader_program->setAttributeArray
+            (0, v.constData());
+
+            shader_program->setUniformValue("selected", 1);
+
+            glDrawArrays(GL_LINES, 0, 2);
+
+            shader_program->setUniformValue("selected", 0);
+        }
+    }
+
+    void draw_edge(QGLShaderProgram *shader_program, QVector4D material, int i)
+    {
+        shader_program->setUniformValue("model_matrix", model);
+        shader_program->setUniformValue("material", material);
+
+        QVector<QVector3D> v;
+        v.push_back(edges[i].A);
+        v.push_back(edges[i].B);
+
+        shader_program->setAttributeArray
+        (0, v.constData());
+
+        shader_program->setUniformValue("selected", 1);
+
+        glDrawArrays(GL_LINES, 0, 2);
+
+        shader_program->setUniformValue("selected", 0);
+    }
+
+    QVector3D get_edge_center()
+    {
+        int i = 0;
+        QVector3D figure_center;
+
+        for(i; i < edges.size(); i++)
+        {
+            figure_center += edges[i].A;
+            figure_center += edges[i].B;
+        }
+
+        return figure_center /= 2.0 * i;
     }
 
 };
