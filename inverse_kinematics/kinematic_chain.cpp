@@ -1,4 +1,5 @@
 ﻿#include "kinematic_chain.h"
+#include "utils.h"
 
 kinematic_chain::kinematic_chain()
 {
@@ -550,11 +551,11 @@ void kinematic_chain::Forces_calculation(double velocity)
     bool last_step=false;
     Vector3d Force,child_dir,Max_Force = Vector3d(0,0,0),Force_before;
     //QVector<int> childs;
-    for(unsigned int e=0;e<effectors.size();e++)
+    for(unsigned int e = 0; e < effectors.size(); e++)
     {
         //childs.clear();
-        cur_joint_id=effectors[e].id;
-        child_id=effectors[e].id;
+        cur_joint_id = effectors[e].id;
+        child_id = effectors[e].id;
         // не обрабатывается случай со смещенной костью
 
         if(TARGET_ACTIVATED)
@@ -562,7 +563,7 @@ void kinematic_chain::Forces_calculation(double velocity)
         else
             Force = Vector3d(0,0,0) ;
 
-        Force_before=Force;
+        Force_before = Force;
         //нормализация вектора силы ----------------------------------------------------
         if(!Force_normalizing)
         {
@@ -579,8 +580,8 @@ void kinematic_chain::Forces_calculation(double velocity)
 
         while(!last_step)
         {
-            if(cur_joint_id==0) last_step=true;
-           /* if(links[child_id]->type==3&&links[cur_joint_id]->type==3) //поиск плеча для джоинта крутящегося вокруг свое оси
+            if(cur_joint_id == 0) last_step = true;
+           /* if(links[child_id]->type==3&&links[cur_joint_id]->type==3) //поиск плеча для джоинта крутящегося вокруг своей оси
             {
                 bool f=false;
                 for(int c=0;c<childs.size();c++)
@@ -600,18 +601,26 @@ void kinematic_chain::Forces_calculation(double velocity)
             child_dir = links[child_id]->dir;
 
             Force_before = Force;
+
+            if(links[cur_joint_id]->repuls_counter)//repulsion force
+            {
+               Force = links[cur_joint_id]->repulsive_Force;
+               links[cur_joint_id]->repuls_counter--;
+            }
+
             Force = links[cur_joint_id]->calculate_Force(Force, effectors[e].K, cur_joint_id == effectors[e].id, child_dir, velocity, ELASTIC_GLOBAL);
+
        // qDebug("Force(%d): %f, %f, %f",cur_joint_id,Force.x(),Force.y(),Force.z());
             if(rot_max_Force)
             {
                 Vector3d curForce;
-                curForce=Force-Force_before;
-                if(len(Max_Force)<len(curForce)) max_Force_id=cur_joint_id,Max_Force=curForce;
+                curForce = Force - Force_before;
+                if(len(Max_Force) < len(curForce)) max_Force_id = cur_joint_id, Max_Force = curForce;
             }
 
             //childs.push_front(child_id);
-            child_id=cur_joint_id;
-            cur_joint_id=links[cur_joint_id]->parent_id;
+            child_id = cur_joint_id;
+            cur_joint_id = links[cur_joint_id]->parent_id;
         }
        // Force=links[cur_joint_id]->calculate_Force(Force,effectors[e].K);
     }
@@ -621,17 +630,17 @@ void kinematic_chain::rotation_step_calculate(double velocity)
 {
     vector<abstract_joint*> joints_to_move;
     int cur_joint_id;
-    bool last_step=false;
+    bool last_step = false;
 
     Forces_calculation(velocity);
 
-    for(unsigned int e=0;e<effectors.size();e++)
+    for(unsigned int e = 0; e < effectors.size(); e++)
     {
         cur_joint_id=effectors[e].id;
 
         while(!last_step)
         {
-            if(cur_joint_id==0) last_step=true;
+            if(cur_joint_id == 0) last_step = true;
             joints_to_move.push_back(links[cur_joint_id]);
             cur_joint_id=links[cur_joint_id]->parent_id;
         }
@@ -1032,4 +1041,77 @@ void kinematic_chain::set_slider_elastic(int id,bool state,double K,double K2,do
     links[id]->slider_elastic_K = K;
     links[id]->slider_elastic_K_2 = K2;
     links[id]->slider_elastic_L = L;
+}
+
+void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affected_link, float precision)
+{
+
+    /* bool one_repulsion = true;
+
+    for(int i = 0; i < links.size(); i++)
+    {
+        if(links[i]->repuls_counter > 0)
+        {
+            one_repulsion = false;
+            break;
+        }
+    }
+    */
+
+    if(true)//только одно отталкивание
+    {
+        for(int i = 0; i < links.size(); i++)
+        {
+            links[i]->repuls_counter = 0;
+        }
+
+        links[affected_link]->repuls_counter = (int)(2.0 * precision);
+
+
+        if(links[affected_link]->repuls_counter < 10)
+            links[affected_link]->repuls_counter = 10;
+
+        Vector3d intersection_point;
+        intersection_point.x() = inetrs_point.x();
+        intersection_point.y() = inetrs_point.y();
+        intersection_point.z() = inetrs_point.z();
+
+        //links[affected_link]->repulsive_Force = Vector3d(0.5,0.5,0.5);
+
+        Vector3d repulsive_Force = reflect(intersection_point - links[affected_link]->global_position, links[affected_link]->dir.normalized());
+
+        Vector3d repulsive_Force_proj = projection(links[affected_link]->dir.normalized(), repulsive_Force);
+        repulsive_Force = repulsive_Force_proj - repulsive_Force;
+
+        links[affected_link]->repulsive_Force = (repulsive_Force.normalized() + links[affected_link]->dir.normalized()*0.2) * 0.25;
+
+        //debug drawning
+
+        QMatrix4x4 ident;
+
+        line_program->bind();
+        line_program->setUniformValue("model_matrix", ident);
+        line_program->setUniformValue("material", QVector4D(1.0,1.0,1.0,1.0));
+
+        QVector3D test_p1;
+        QVector3D test_p2;
+
+        test_p1.setX(links[affected_link]->global_position.x());
+        test_p1.setY(links[affected_link]->global_position.y());
+        test_p1.setZ(links[affected_link]->global_position.z());
+
+        test_p2.setX(links[affected_link]->global_position.x() + links[affected_link]->repulsive_Force.x());
+        test_p2.setY(links[affected_link]->global_position.y() + links[affected_link]->repulsive_Force.y());
+        test_p2.setZ(links[affected_link]->global_position.z() + links[affected_link]->repulsive_Force.z());
+
+        QVector<QVector3D> v;
+        v.push_back(test_p1);
+        v.push_back(test_p2);
+
+        line_program->setAttributeArray
+        (0, v.constData());
+
+        glDrawArrays(GL_LINES, 0, 2);
+    }
+
 }

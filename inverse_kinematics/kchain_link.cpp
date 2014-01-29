@@ -32,6 +32,8 @@ Kchain_link::Kchain_link(Vector3d in_pos,double in_length,int in_parent_id,doubl
     //Result_Force=Quaterniond(0,0,0,0);
     Result_Force=Result_Force.Identity();
     Result_Force.Identity();
+
+    repuls_counter = 0;
 }
 
 void Kchain_link::refresh_bone_axis()

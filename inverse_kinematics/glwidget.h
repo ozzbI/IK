@@ -53,8 +53,12 @@ public:
 
     bool ssao, shadows, draw_edges;
     int selected_object_id;
+    bool geometry_repulsion, target_shift;
 
-    float movement_precision;
+    int movement_precision;
+
+    QVector3D inetrs_point;
+    int affected_link;
 
     QVector3D intersect_point;
 

@@ -49,7 +49,8 @@ HEADERS  += mainwindow.h \
     scene.h \
     octree.h \
     cubemapfbo.h \
-    addboxdialog.h
+    addboxdialog.h \
+    utils.h
 
 FORMS    += mainwindow.ui \
     joint_choise.ui \

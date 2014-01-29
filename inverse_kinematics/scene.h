@@ -58,6 +58,7 @@ public:
     QMutex dc_mutex;
 
     QVector<QVector3D> intersect_points; // for direct collision (miltithreded)
+    QVector<int> affected_links; // for direct collision (miltithreded)
 
     bool dc_proc_ended;
 
@@ -80,16 +81,16 @@ public:
     void update_polys_id();
 
 
-    bool detect_all_collisions();
+    bool detect_all_collisions(QVector3D &inters_point, int &affected_link);
     bool collision_detect(int part_id, QVector<figure> &figures);
-    bool collision_detect_octree(int part_id, QVector<figure> &figures,  QVector3D &inters_point, int &figure_id);
+    bool collision_detect_octree(int part_id, QVector<figure> &figures,  QVector3D &inters_point);
     bool direct_collision_detect(int part_id, int test_part_id, QVector<figure> &figures, QVector3D &inters_point);
     bool direct_collision_detect_closest_to_point(int part_id, int test_part_id, QVector<figure> &figures, QVector3D &inters_point, QVector3D point);
     int poly_intersect( QVector3D l1, QVector3D l2, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
 
     void build_octree(double boundingBoxSize, bool for_chain);
 
-    bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode &node, QVector3D &inters_point, int &figure_id);
+    bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode &node, QVector3D &inters_point);
 
     //debug
 

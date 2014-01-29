@@ -35,6 +35,8 @@ private:
 
 public:
 
+    QGLShaderProgram *line_program;//debug
+
     vector<ball_joint,Eigen::aligned_allocator<ball_joint> > ball_joints;
     vector<hinge_joint,Eigen::aligned_allocator<hinge_joint> > hinge_joints;
     vector<hinge_ra,Eigen::aligned_allocator<hinge_ra> > hinge_ra_joints;
@@ -106,6 +108,8 @@ public:
 
     void set_joint_elastic(int id,bool state,double K,double K2,double angle);
     void set_slider_elastic(int id,bool state,double K,double K2,double L);
+
+    void calculate_repulsion_Force(QVector3D &inetrs_point, int affected_link, float precision);
 
     static double len(Vector3d& a)
     {

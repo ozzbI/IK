@@ -844,6 +844,7 @@ void GLWidget::initializeGL()
     // Main shader program link end --------------------------
 
 
+    KChain.line_program = line_program;
 
 
     coordinate_axis.setshaderprog(program);
@@ -985,6 +986,8 @@ void GLWidget::initializeGL()
     move_rotate_object = false;
     redact_scene_mode = false;
     move_box = false;
+    geometry_repulsion = false;
+    target_shift = false;
 
     current_axis_state = xPlane;
 
@@ -1009,16 +1012,26 @@ void GLWidget::paintGL()
     if(!(stop_proc||main_stop)) //move chain and detect collision
     {
         KChain.backup_links();
-        KChain.rotation_cycle(movement_precision, 0.1 / movement_precision * move_vel);
+        KChain.rotation_cycle(movement_precision, 0.1  / (float) movement_precision * move_vel);
 
         //scene objects
         scene->recalc_IK_chain_model();
 
-        if (scene->detect_all_collisions()) // collisions handler
+        if (scene->detect_all_collisions(inetrs_point, affected_link)) // collisions handler
         {
             KChain.restore_links();
             scene->recalc_IK_chain_model();
             KChain.collision = true;
+
+            if(geometry_repulsion)
+            {
+                KChain.calculate_repulsion_Force(inetrs_point, affected_link, (float)movement_precision/(float)move_vel);
+            }
+
+            if(target_shift)
+            {
+
+            }
 
         }
         else

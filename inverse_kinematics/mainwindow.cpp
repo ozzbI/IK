@@ -730,9 +730,11 @@ void  MainWindow::createActions()
 
     geometryRepulsion = new QAction("Отталкивание от препятсвий", this);
     geometryRepulsion->setCheckable(true);
+    connect(geometryRepulsion,SIGNAL(toggled(bool)),this,SLOT(set_geometry_repulsion(bool)));
 
     targetShift = new QAction("Сдвиг цели", this);
     targetShift->setCheckable(true);
+    connect(targetShift,SIGNAL(toggled(bool)),this,SLOT(set_target_shift(bool)));
 
     forceNormAct = new QAction("Нормализация действущей силы", this);
     connect(forceNormAct,SIGNAL(toggled(bool)),this,SLOT(set_force_normalizing(bool)));
@@ -853,4 +855,14 @@ void MainWindow::set_force_normalizing(bool state)
 void MainWindow::set_max_force_rotation(bool state)
 {
     glw->KChain.set_max_Force_rotation(state);
+}
+
+void MainWindow::set_geometry_repulsion(bool state)
+{
+    glw->geometry_repulsion = state;
+}
+
+void MainWindow::set_target_shift(bool state)
+{
+    glw->target_shift = state;
 }

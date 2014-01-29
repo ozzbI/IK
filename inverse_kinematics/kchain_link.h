@@ -47,6 +47,9 @@ public:
 
     Quaterniond Result_Force;
 
+    Vector3d repulsive_Force;
+    int repuls_counter;
+
     Kchain_link();
     Kchain_link(Vector3d in_pos,double in_lenght,int in_parent_id,double in_yaw,double in_pitch,double in_roll,bool in_root);
 

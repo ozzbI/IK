@@ -313,19 +313,24 @@ void Scene::rebuild_chain_vertices_cash()
     }
 }
 
-bool Scene::detect_all_collisions()
+bool Scene::detect_all_collisions(QVector3D &inters_point, int &affected_link)
 {
     bool res = false;
 
     emit dc_start_process();
 
-    QVector3D inters_point;
-    int figure_id;
+    //QVector3D inters_point;
+    //int figure_id;
 
     for(int i = 0; i < chain_links_n; i++)
     {
-        res = collision_detect_octree(i, Scene_objects, inters_point, figure_id);
-        if(res) break;
+        res = collision_detect_octree(i, Scene_objects, inters_point);
+
+        if(res)
+        {
+            affected_link = i;
+            break;
+        }
     }
 
 
@@ -363,9 +368,14 @@ bool Scene::detect_all_collisions()
     if(!res)
     {
         if(intersect_points.size() > 0)
+        {
             res = true;
+            inters_point = intersect_points[0];
+            affected_link = affected_links[0];
+        }
     }
 
+    affected_links.clear();
     intersect_points.clear();
     dc_mutex.unlock();
 
@@ -580,7 +590,7 @@ bool Scene::collision_detect(int part_id, QVector<figure> &figures)
 }
 
 
-bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVector3D &inters_point, int &figure_id)
+bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVector3D &inters_point)
 {
     //QVector3D inters_point;
     QVector3D p1,p2,pa,pb,pc;
@@ -671,7 +681,6 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVect
                                 //draw_collision_box(inters_point);
 
                                 //qDebug("collision");
-                                figure_id = current_node->polys()[i]->figure_id;
                                 return true;
                             }
                         }
@@ -696,7 +705,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVect
 
             }
 
-            if (octree_traverse(p1, p2, *current_node, inters_point, figure_id))
+            if (octree_traverse(p1, p2, *current_node, inters_point))
                 return true;
 
             // octree
@@ -714,7 +723,7 @@ bool Scene::collision_detect_octree(int part_id, QVector<figure> &figures, QVect
 
 }
 
-bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point, int &figure_id)
+bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point)
 {
     for( int i = 0; i < node.polys().size();i++ )//проверка полигонов в ноде
     {
@@ -736,7 +745,6 @@ bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVec
             b1->model=matr;
             b1->draw();*/
             //qDebug("collision");
-            figure_id = node.polys()[i]->figure_id;
             return true;
         }
     }
@@ -744,7 +752,7 @@ bool Scene::octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVec
 
     for( int i = 0; i < node.children().size(); i++ ) // проверка потомков ноды
     {
-        if(octree_traverse(p1, p2, *node.children()[i], inters_point, figure_id ))
+        if(octree_traverse(p1, p2, *node.children()[i], inters_point))
             return true;
     }
 
@@ -1157,6 +1165,7 @@ bool dc_Worker::direct_collision_detect(int part_id,int test_part_id, QVector<fi
             if(poly_intersect(p1,p2,pa,pb,pc,inters_point))
             {
                 scene->intersect_points.push_back(inters_point);
+                scene->affected_links.push_back(test_part_id);
                 return true;
             }
             /*

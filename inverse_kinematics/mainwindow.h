@@ -109,6 +109,8 @@ private slots:
     void delete_box();
     void set_force_normalizing(bool state);
     void set_max_force_rotation(bool state);
+    void set_geometry_repulsion(bool state);
+    void set_target_shift(bool state);
 
     //menu
     void createActions();
