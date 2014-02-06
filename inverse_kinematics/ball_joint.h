@@ -60,7 +60,7 @@ public:
 
         elastic_Force = Vector3d(0,0,0);
 
-        if(global_elastic && slider_elastic) //обработка сил упругости
+        if(global_elastic && joint_elastic) //обработка сил упругости
         {
             //да это кривой код
 

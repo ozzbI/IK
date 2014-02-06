@@ -110,6 +110,14 @@ public:
         }
     }
 
+    void draw_edges(QVector4D material)
+    {
+        for (int i = 0 ; i < Scene_objects.size(); i++)
+        {
+            Scene_objects[i].draw_edges(material);
+        }
+    }
+
     void set_shader_program_for_objects(QGLShaderProgram *program)
     {
         for(int i = chain_links_n; i < Scene_objects.size(); i++)
@@ -147,6 +155,7 @@ public:
     }
 
     bool direct_collision_detect(int part_id,int test_part_id, QVector<figure> &figures);
+    bool direct_collision_detect_max_id(int part_id,int test_part_id, QVector<figure> &figures);
     bool direct_collision_detect_octree(int part_id,int test_part_id, QVector<figure> &figures);
     int poly_intersect( QVector3D l1, QVector3D l2, QVector3D p0, QVector3D p1, QVector3D p2,QVector3D& res_point );
     bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode& node, QVector3D &inters_point);

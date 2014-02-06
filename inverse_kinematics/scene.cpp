@@ -1117,7 +1117,7 @@ bool dc_Worker::process()
 
         }
 */
-    int res = false;
+    bool res = false;
 
     for(int c = scene->chain_links_n; c < scene->Scene_objects.size(); c++)
     {
@@ -1131,6 +1131,28 @@ bool dc_Worker::process()
         }
 
         if (res) break;
+    }
+
+    //chain self cross
+
+    if(!res)
+    {
+        for(int c = 0; c < scene->chain_links_n; c++)
+        {
+            for(int i = 0; i < scene->chain_links_n; i++)
+            {
+                if( abs(c - i) < 4 )
+                    continue;
+
+                if(direct_collision_detect_max_id(c, i, scene->Scene_objects))
+                {
+                    res = true;
+                    break;
+                }
+            }
+
+            if (res) break;
+        }
     }
 
     scene->dc_mutex.unlock();
@@ -1183,6 +1205,43 @@ bool dc_Worker::direct_collision_detect(int part_id,int test_part_id, QVector<fi
                     //return true;
                 }
             }*/
+        }
+    }
+
+    return false;
+}
+
+bool dc_Worker::direct_collision_detect_max_id(int part_id,int test_part_id, QVector<figure> &figures)
+{
+    QVector3D inters_point;
+    QVector3D p1,p2,pa,pb,pc;
+
+    figure& f = figures[part_id];
+    figure& ft = figures[test_part_id];
+
+    int e_size = figures[part_id].edges.size();
+
+    int t_size = figures[test_part_id].polys.size();
+
+    for(int p = 0; p < e_size; p++)
+    {
+        p1 = f.edges[p].A;
+        p2 = f.edges[p].B;
+
+        for(int i = 0; i < t_size; i++)
+        {
+            polygon& p = ft.polys[i];
+
+            pa = p.vertices[0];
+            pb = p.vertices[1];
+            pc = p.vertices[2];
+
+            if(poly_intersect(p1,p2,pa,pb,pc,inters_point))
+            {
+                scene->intersect_points.push_back(inters_point);
+                scene->affected_links.push_back( (test_part_id > part_id ? test_part_id : part_id ) );
+                return true;
+            }
         }
     }
 

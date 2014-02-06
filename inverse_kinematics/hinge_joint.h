@@ -82,7 +82,7 @@ public:
             right = temp;
         }
 
-        if(global_elastic && slider_elastic) //обработка сил упругости (копипаста с боллджоинта)
+        if(global_elastic && joint_elastic) //обработка сил упругости (копипаста с боллджоинта)
         {
             //да это кривой код
 

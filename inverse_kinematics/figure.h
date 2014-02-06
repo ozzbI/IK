@@ -112,6 +112,30 @@ public:
         }
     }
 
+    void draw_edges(QVector4D material)
+    {
+        QMatrix4x4 identity;
+
+        program->setUniformValue("model_matrix", identity);
+        program->setUniformValue("material", material);
+
+        for(int i=0;i<edges.size();i++)
+        {
+            QVector<QVector3D> v;
+            v.push_back(edges[i].A);
+            v.push_back(edges[i].B);
+
+            program->setAttributeArray
+            (0, v.constData());
+
+            program->setUniformValue("selected", 1);
+
+            glDrawArrays(GL_LINES, 0, 2);
+
+            program->setUniformValue("selected", 0);
+        }
+    }
+
     void draw_edges(QGLShaderProgram *shader_program, QVector4D material)
     {
         QMatrix4x4 identity;

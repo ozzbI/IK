@@ -58,6 +58,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     sph1->make_sphere(0,0,0,0.3,50);
     sph1->model.translate(5,0,5);
     target_for_effector=Vector3d(7,7,7);
+    target_pos = QVector3D(7,7,7);
 
 
     pr1=new prism();
@@ -1009,9 +1010,50 @@ void GLWidget::paintGL()
 
     scene->recalc_IK_chain_model();
 
+    figure ray_figure; // надо переместить выпилить после отладки
+    edge ray_edge;
+    bool shift_targ_visual = false;
+
     if(!(stop_proc||main_stop)) //move chain and detect collision
     {
         KChain.backup_links();
+
+        if(target_shift)
+        {
+            QVector3D intersect_point;
+
+            ray_edge.A.setX(KChain.effectors[0].target.x());
+            ray_edge.A.setY(KChain.effectors[0].target.y());
+            ray_edge.A.setZ(KChain.effectors[0].target.z());
+
+            Vector3d chain_end = KChain.links[KChain.links.size() - 1]->global_position
+                    + KChain.links[KChain.links.size() - 1]->dir * KChain.links[KChain.links.size() - 1]->length * 1.01;
+
+            ray_edge.B.setX(chain_end.x());
+            ray_edge.B.setY(chain_end.y());
+            ray_edge.B.setZ(chain_end.z());
+
+            ray_figure.edges.push_back(ray_edge);
+
+            scene->Scene_objects.push_back(ray_figure);
+
+            for(int i = 0; i < scene->Scene_objects.size() - 1; i++)
+            {
+
+                if(i == (scene->chain_links_n - 1) || i == (scene->chain_links_n - 2))
+                    continue;
+
+                if (scene->direct_collision_detect(scene->Scene_objects.size() - 1, i, scene->Scene_objects, intersect_point))
+                {
+                    shift_targ_visual = true;
+                    break;
+                }
+            }
+
+            scene->Scene_objects.pop_back();
+
+        }
+
         KChain.rotation_cycle(movement_precision, 0.1  / (float) movement_precision * move_vel);
 
         //scene objects
@@ -1027,23 +1069,13 @@ void GLWidget::paintGL()
             {
                 KChain.calculate_repulsion_Force(inetrs_point, affected_link, (float)movement_precision/(float)move_vel);
             }
-
-            if(target_shift)
-            {
-
-            }
-
         }
         else
         {
             if(KChain.collision)
             {
                 KChain.collision = false;
-
             }
-            //chain movement test
-            //KChain.links[0]->global_position += Vector3d(0.01,0.01,0.01);
-            //KChain.glob_pos_recalc(1,0);
         }
     }
 
@@ -1137,6 +1169,23 @@ void GLWidget::paintGL()
     scene->draw_objects();
 
     //scene->draw_polys(); //debug
+
+
+    //debug drawning shift target
+    /*
+    ray_figure.setshaderprog(line_program);
+    scene->Scene_objects.push_back(ray_figure);
+    program->setUniformValue("ambient", QVector4D(0.0,0.0,0.0,1));
+
+    if(shift_targ_visual)
+        scene->draw_edges(QVector4D(1.0,0.0,0.0,1.0));
+    else
+        scene->draw_edges(QVector4D(0.0,0.0,0.0,0.0));
+
+    program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1));
+    scene->Scene_objects.pop_back();
+    */
+    //debug drawning shift target ------------------------------
 
     if(draw_edges)
     {
@@ -1321,6 +1370,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         {
             QVector3D Qp, Qpos;
             Vector3d p;
+
             figure ray_figure;
             edge ray_edge;
 
@@ -1519,6 +1569,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 KChain.effectors[0].target.x() = new_target.x();
                 KChain.effectors[0].target.y() = new_target.y();
                 KChain.effectors[0].target.z() = new_target.z();
+
+                target_pos = new_target;
             }
             else if(move_root)
             {

@@ -175,6 +175,7 @@ private:
     box* collision_box;
 
     Vector3d target_for_effector;
+    QVector3D target_pos;
 
     coord_axis coordinate_axis;
 

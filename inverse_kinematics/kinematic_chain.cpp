@@ -578,6 +578,8 @@ void kinematic_chain::Forces_calculation(double velocity)
 
        // qDebug("Force: %f, %f, %f ------------------------------------------------------",Force.x(),Force.y(),Force.z());
 
+        bool repulsion = false;
+
         while(!last_step)
         {
             if(cur_joint_id == 0) last_step = true;
@@ -602,13 +604,25 @@ void kinematic_chain::Forces_calculation(double velocity)
 
             Force_before = Force;
 
+            // отлючается эластичность если произошло столкновение
+            bool global_elastic_state = ELASTIC_GLOBAL;
+
             if(links[cur_joint_id]->repuls_counter)//repulsion force
             {
                Force = links[cur_joint_id]->repulsive_Force;
                links[cur_joint_id]->repuls_counter--;
+
+               repulsion = true;
+            }
+
+            if(repulsion)
+            {
+                ELASTIC_GLOBAL = false;
             }
 
             Force = links[cur_joint_id]->calculate_Force(Force, effectors[e].K, cur_joint_id == effectors[e].id, child_dir, velocity, ELASTIC_GLOBAL);
+
+            ELASTIC_GLOBAL = global_elastic_state;
 
        // qDebug("Force(%d): %f, %f, %f",cur_joint_id,Force.x(),Force.y(),Force.z());
             if(rot_max_Force)
@@ -1083,7 +1097,7 @@ void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affe
         Vector3d repulsive_Force_proj = projection(links[affected_link]->dir.normalized(), repulsive_Force);
         repulsive_Force = repulsive_Force_proj - repulsive_Force;
 
-        links[affected_link]->repulsive_Force = (repulsive_Force.normalized() + links[affected_link]->dir.normalized()*0.2) * 0.25;
+        links[affected_link]->repulsive_Force = (repulsive_Force.normalized() - links[affected_link]->dir.normalized()*0.3) * 0.25;
 
         //debug drawning
 
