@@ -1077,6 +1077,47 @@ void Scene::update_polys_id()
     }
 }
 
+bool Scene::is_target_visible(QVector3D target)
+{
+    figure ray_figure;
+    edge ray_edge;
+
+    QVector3D intersect_point;
+
+    //ray_edge.A.setX(target.x());
+    //ray_edge.A.setY(target.y());
+    //ray_edge.A.setZ(target.z());
+
+    ray_edge.A = target;
+
+    Vector3d chain_end = IKChain->links[IKChain->links.size() - 1]->global_position
+            + IKChain->links[IKChain->links.size() - 1]->dir * IKChain->links[IKChain->links.size() - 1]->length * 1.01;
+
+    ray_edge.B.setX(chain_end.x());
+    ray_edge.B.setY(chain_end.y());
+    ray_edge.B.setZ(chain_end.z());
+
+    ray_figure.edges.push_back(ray_edge);
+
+    Scene_objects.push_back(ray_figure);
+
+    for(int i = 0; i < Scene_objects.size() - 2; i++)
+    {
+        if(i == (chain_links_n - 1) || i == (chain_links_n - 2)) //не проверять на пересечеие с эффектором
+            continue;
+
+        if (direct_collision_detect(Scene_objects.size() - 1, i, Scene_objects, intersect_point))
+        {
+            Scene_objects.pop_back();
+            return false;
+        }
+    }
+
+    Scene_objects.pop_back();
+
+    return true;
+}
+
 void direct_collision_Thread::run()
 {
    /* for(int c = scene->chain_links_n; c < scene->Scene_objects.size();c++)

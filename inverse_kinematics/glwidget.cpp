@@ -1,4 +1,5 @@
 ﻿#include "glwidget.h"
+#include "utils.h"
 //#include <QtGui>
 
 
@@ -988,7 +989,7 @@ void GLWidget::initializeGL()
     redact_scene_mode = false;
     move_box = false;
     geometry_repulsion = false;
-    target_shift = false;
+    target_shift_mode = false;
 
     current_axis_state = xPlane;
 
@@ -998,6 +999,9 @@ void GLWidget::initializeGL()
     set_lp(QVector4D(0,20,0,0));
     cube_fbo = new CubeMapFBO();
     cube_fbo->init(1024 , 1024 , glFuncs);
+
+    QTime midnight(0,0,0);
+    qsrand(midnight.secsTo(QTime::currentTime()));
 }
 
 void GLWidget::paintGL()
@@ -1012,19 +1016,23 @@ void GLWidget::paintGL()
 
     figure ray_figure; // надо переместить выпилить после отладки
     edge ray_edge;
-    bool shift_targ_visual = false;
 
     if(!(stop_proc||main_stop)) //move chain and detect collision
     {
         KChain.backup_links();
 
-        if(target_shift)
+        if(target_shift_mode)
         {
             QVector3D intersect_point;
+            bool target_shifted_temp = target_shifted;
 
+            /*
             ray_edge.A.setX(KChain.effectors[0].target.x());
             ray_edge.A.setY(KChain.effectors[0].target.y());
             ray_edge.A.setZ(KChain.effectors[0].target.z());
+            */
+
+            ray_edge.A = target_pos;
 
             Vector3d chain_end = KChain.links[KChain.links.size() - 1]->global_position
                     + KChain.links[KChain.links.size() - 1]->dir * KChain.links[KChain.links.size() - 1]->length * 1.01;
@@ -1037,22 +1045,131 @@ void GLWidget::paintGL()
 
             scene->Scene_objects.push_back(ray_figure);
 
-            for(int i = 0; i < scene->Scene_objects.size() - 1; i++)
+            bool random_target_founded = false;
+
+            for(int i = 0; i < scene->Scene_objects.size() - 1; i++) // проверка видимости эфектора и настоящей цели
             {
 
-                if(i == (scene->chain_links_n - 1) || i == (scene->chain_links_n - 2))
+                if(i == (scene->chain_links_n - 1) || i == (scene->chain_links_n - 2)) //не проверять на пересечеие с эффектором
                     continue;
 
                 if (scene->direct_collision_detect(scene->Scene_objects.size() - 1, i, scene->Scene_objects, intersect_point))
                 {
-                    shift_targ_visual = true;
+                    //рандомный сдвиг цели пока не найдена новая цель видимая из эфектора
+
+                    float shift_radius = 0.2;
+
+                    if(!target_shifted)
+                    {
+
+                        QVector3D plain_normal, shift_vec, random_target;
+
+                        QMatrix4x4 normal_rot;
+
+                        plain_normal = (ray_edge.B - target_pos).normalized();
+
+                        normal_rot.rotate( 360.0 / 30.0, plain_normal );
+
+                        shift_vec = target_pos;
+
+                        shift_vec = QVector3D(1.0, 1.0, -( plain_normal.x() + plain_normal.y() )/plain_normal.z());
+
+                        //qDebug() << QVector3D::dotProduct(plain_normal,shift_vec);
+
+                        shift_vec.normalize();
+
+                        while(true) //поиск фантомной цели видимой из эффектора
+                        {
+                            //Vector3d random_target, reflect_axis;
+
+                            for(int r = 0; r < 30; r++) //разные смещения с одинаковым радиусом
+                            {
+                                /*
+                                //для отражения от плоскости для ещё большего рандома
+                                reflect_axis.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                                reflect_axis.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                                reflect_axis.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+
+                                reflect_axis.normalize();
+
+                                //расчёт фантомной цели
+                                random_target.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                                random_target.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                                random_target.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+
+                                random_target.normalize();
+                                random_target *= shift_radius;
+
+                                random_target = reflect(random_target, reflect_axis);
+
+                                //random_target += target_pos;
+                                random_target.x() += target_pos.x();
+                                random_target.y() += target_pos.y();
+                                random_target.z() += target_pos.z();
+                                */
+
+                                //вращение вектора сдвига вокруг нормали плоскости
+
+                                shift_vec = shift_vec * normal_rot;
+
+                                random_target = target_pos + shift_vec * shift_radius;
+
+                                if(scene->is_target_visible(random_target))
+                                {
+                                    //установка фантомной цели (настоящая цель в target_pos)
+                                    random_target_founded = true;
+
+                                    KChain.effectors[0].target.x() = random_target.x();
+                                    KChain.effectors[0].target.y() = random_target.y();
+                                    KChain.effectors[0].target.z() = random_target.z();
+
+                                    break;
+                                }
+                            }
+
+                            if (random_target_founded)
+                                break;
+
+                            shift_radius += 0.2; //увеличение радиуса
+
+                        }
+
+                        target_shifted = true;
+
+                    }
+
                     break;
                 }
+                else
+                {
+                    if(i == scene->Scene_objects.size() - 2) //не было ни одного пересечения
+                        target_shifted = false;
+                }
+
+
+                if (random_target_founded)
+                    break;
+
+            }
+
+            //проверка на сближение с фантомной целью
+            if(target_shifted && KChain.distance_to_target() < 0.2)
+            {
+                target_shifted = false;
+            }
+
+            if(target_shifted_temp == true && target_shifted == false) //проврека на возврат настоящей цели
+            {
+                KChain.effectors[0].target.x() = target_pos.x();
+                KChain.effectors[0].target.y() = target_pos.y();
+                KChain.effectors[0].target.z() = target_pos.z();
             }
 
             scene->Scene_objects.pop_back();
 
         }
+
+
 
         KChain.rotation_cycle(movement_precision, 0.1  / (float) movement_precision * move_vel);
 
@@ -1172,19 +1289,19 @@ void GLWidget::paintGL()
 
 
     //debug drawning shift target
-    /*
+
     ray_figure.setshaderprog(line_program);
     scene->Scene_objects.push_back(ray_figure);
     program->setUniformValue("ambient", QVector4D(0.0,0.0,0.0,1));
 
-    if(shift_targ_visual)
+    if(target_shifted)
         scene->draw_edges(QVector4D(1.0,0.0,0.0,1.0));
     else
         scene->draw_edges(QVector4D(0.0,0.0,0.0,0.0));
 
     program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1));
     scene->Scene_objects.pop_back();
-    */
+
     //debug drawning shift target ------------------------------
 
     if(draw_edges)
@@ -1571,6 +1688,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 KChain.effectors[0].target.z() = new_target.z();
 
                 target_pos = new_target;
+                target_shifted = false;
             }
             else if(move_root)
             {
@@ -1579,6 +1697,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 KChain.links[0]->global_position.z() = new_target.z();
                 KChain.glob_pos_recalc(1,0);
                 KChain.collision = false;
+                target_shifted = false;
             }
         }
     }

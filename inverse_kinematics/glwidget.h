@@ -53,7 +53,7 @@ public:
 
     bool ssao, shadows, draw_edges;
     int selected_object_id;
-    bool geometry_repulsion, target_shift;
+    bool geometry_repulsion, target_shift_mode, target_shifted; // надобы перенести в scene + соответсвующую логику
 
     int movement_precision;
 

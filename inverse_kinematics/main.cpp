@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QGLFormat glf = QGLFormat::defaultFormat();
     //glf.setSampleBuffers(true);
     glf.setProfile(QGLFormat::CompatibilityProfile);
-    glf.setVersion(3,2);
+    glf.setVersion(2,1);
     //glf.setSamples(4);
     QGLFormat::setDefaultFormat(glf);
 

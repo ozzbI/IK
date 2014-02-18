@@ -92,6 +92,8 @@ public:
 
     bool octree_traverse(QVector3D &p1, QVector3D &p2, OctreeNode &node, QVector3D &inters_point);
 
+    bool is_target_visible(QVector3D target);
+
     //debug
 
     void draw_polys()

@@ -864,5 +864,5 @@ void MainWindow::set_geometry_repulsion(bool state)
 
 void MainWindow::set_target_shift(bool state)
 {
-    glw->target_shift = state;
+    glw->target_shift_mode = state;
 }

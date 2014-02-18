@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     figure.cpp \
     octree.cpp \
     cubemapfbo.cpp \
-    addboxdialog.cpp
+    addboxdialog.cpp \
+    utils.cpp
 
 HEADERS  += mainwindow.h \
     box.h \

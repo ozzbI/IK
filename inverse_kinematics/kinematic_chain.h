@@ -141,6 +141,13 @@ public:
         hinge_joints = hinge_joints_backup;
         hinge_ra_joints = hinge_ra_joints_backup;
     }
+
+    double distance_to_target()
+    {
+        int cur_joint_id = effectors[0].id;
+        Vector3d distance = ( effectors[0].target - (links[cur_joint_id]->global_position + links[cur_joint_id]->dir * links[cur_joint_id]->length) );
+        return sqrt(distance.x()*distance.x() + distance.y()*distance.y() + distance.z()*distance.z());
+    }
 };
 
 #endif // KINEMATIC_CHAIN_H
