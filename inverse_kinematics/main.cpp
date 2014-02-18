@@ -3,13 +3,6 @@
 #include <QLayout>
 
 
-/*
- * 1
- * 2
- * 3
- *
- */
-
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -21,22 +14,6 @@ int main(int argc, char *argv[])
     //glf.setSamples(4);
     QGLFormat::setDefaultFormat(glf);
 
-    +    /*
-    +     * 1
-    +     *
-    +     * 3
-    +     *
-    +     */
-
-<<<<<<< HEAD
-=======
-    /*
-     * 1
-     * 2123
-     * 3
-     *
-     */
->>>>>>> test_branch
 
     QTextCodec *codec = QTextCodec::codecForName("CP1251");
     //QTextCodec::setCodecForTr(codec);
@@ -48,23 +25,4 @@ int main(int argc, char *argv[])
 
     w.show();
     return a.exec();
-
-    /*
-     * 1
-     * 2
-     * 3
-     * 4
-     */
-
-<<<<<<< HEAD
-=======
-    /////
->>>>>>> test_branch
-
-    /*
-     * 1
-     * 2
-     * 3
-     * 4
-     */
 }
