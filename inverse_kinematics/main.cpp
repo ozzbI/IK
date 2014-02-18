@@ -28,6 +28,15 @@ int main(int argc, char *argv[])
     +     *
     +     */
 
+<<<<<<< HEAD
+=======
+    /*
+     * 1
+     * 2123
+     * 3
+     *
+     */
+>>>>>>> test_branch
 
     QTextCodec *codec = QTextCodec::codecForName("CP1251");
     //QTextCodec::setCodecForTr(codec);
@@ -47,6 +56,10 @@ int main(int argc, char *argv[])
      * 4
      */
 
+<<<<<<< HEAD
+=======
+    /////
+>>>>>>> test_branch
 
     /*
      * 1
