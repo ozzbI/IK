@@ -13,6 +13,13 @@ int main(int argc, char *argv[])
     //glf.setSamples(4);
     QGLFormat::setDefaultFormat(glf);
 
+    +    /*
+    +     * 1
+    +     *
+    +     * 3
+    +     *
+    +     */
+
     QTextCodec *codec = QTextCodec::codecForName("CP1251");
     //QTextCodec::setCodecForTr(codec);
     QTextCodec::setCodecForLocale(codec);
