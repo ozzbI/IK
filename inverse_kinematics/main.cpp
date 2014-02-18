@@ -2,6 +2,14 @@
 #include "mainwindow.h"
 #include <QLayout>
 
+
+/*
+ * 1
+ * 2
+ * 3
+ *
+ */
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -20,6 +28,7 @@ int main(int argc, char *argv[])
     +     *
     +     */
 
+
     QTextCodec *codec = QTextCodec::codecForName("CP1251");
     //QTextCodec::setCodecForTr(codec);
     QTextCodec::setCodecForLocale(codec);
@@ -30,4 +39,11 @@ int main(int argc, char *argv[])
 
     w.show();
     return a.exec();
+
+    /*
+     * 1
+     * 2
+     * 3
+     * 4
+     */
 }
