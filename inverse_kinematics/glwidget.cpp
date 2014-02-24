@@ -991,6 +991,10 @@ void GLWidget::initializeGL()
     geometry_repulsion = false;
     target_shift_mode = false;
 
+    randomTargetShift = 0.0;
+    randomTargetShiftCounter = 0;
+    randomTargetShiftVec = Vector3d(0,0,0);
+
     current_axis_state = xPlane;
 
     movement_precision = 10.0;
@@ -1026,12 +1030,6 @@ void GLWidget::paintGL()
             QVector3D intersect_point;
             bool target_shifted_temp = target_shifted;
 
-            /*
-            ray_edge.A.setX(KChain.effectors[0].target.x());
-            ray_edge.A.setY(KChain.effectors[0].target.y());
-            ray_edge.A.setZ(KChain.effectors[0].target.z());
-            */
-
             ray_edge.A = target_pos;
 
             Vector3d chain_end = KChain.links[KChain.links.size() - 1]->global_position
@@ -1061,7 +1059,6 @@ void GLWidget::paintGL()
 
                     if(!target_shifted)
                     {
-
                         QVector3D plain_normal, shift_vec, random_target;
 
                         QMatrix4x4 normal_rot;
@@ -1084,33 +1081,12 @@ void GLWidget::paintGL()
 
                             for(int r = 0; r < 30; r++) //разные смещения с одинаковым радиусом
                             {
-                                /*
-                                //для отражения от плоскости для ещё большего рандома
-                                reflect_axis.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-                                reflect_axis.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-                                reflect_axis.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-
-                                reflect_axis.normalize();
-
-                                //расчёт фантомной цели
-                                random_target.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-                                random_target.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-                                random_target.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
-
-                                random_target.normalize();
-                                random_target *= shift_radius;
-
-                                random_target = reflect(random_target, reflect_axis);
-
-                                //random_target += target_pos;
-                                random_target.x() += target_pos.x();
-                                random_target.y() += target_pos.y();
-                                random_target.z() += target_pos.z();
-                                */
-
                                 //вращение вектора сдвига вокруг нормали плоскости
 
                                 shift_vec = shift_vec * normal_rot;
+
+                                //отмена доп смещения
+                                randomTargetShiftVec = Vector3d(0,0,0);
 
                                 random_target = target_pos + shift_vec * shift_radius;
 
@@ -1146,16 +1122,19 @@ void GLWidget::paintGL()
                         target_shifted = false;
                 }
 
-
                 if (random_target_founded)
                     break;
-
             }
 
             //проверка на сближение с фантомной целью
-            if(target_shifted && KChain.distance_to_target() < 0.2)
+            if(KChain.distance_to_target() < 0.2) // 0.2 - option
             {
-                target_shifted = false;
+                if(target_shifted)
+                {
+                    target_shifted = false;
+                }
+
+                randomTargetShiftCounter = 1; // для добавочного смещения
             }
 
             if(target_shifted_temp == true && target_shifted == false) //проврека на возврат настоящей цели
@@ -1163,6 +1142,9 @@ void GLWidget::paintGL()
                 KChain.effectors[0].target.x() = target_pos.x();
                 KChain.effectors[0].target.y() = target_pos.y();
                 KChain.effectors[0].target.z() = target_pos.z();
+
+                //отмена доп смещения
+                randomTargetShiftVec = Vector3d(0,0,0);
             }
 
             scene->Scene_objects.pop_back();
@@ -1186,9 +1168,59 @@ void GLWidget::paintGL()
             {
                 KChain.calculate_repulsion_Force(inetrs_point, affected_link, (float)movement_precision/(float)move_vel);
             }
+
+            //случайный добавочный сдвиг цели при столкновении
+            if(target_shift_mode)
+            {
+                randomTargetShift += 0.4; // 1 - option
+
+                randomTargetShiftCounter = 45; // 25 - option
+
+                KChain.effectors[0].target -= randomTargetShiftVec;
+
+                //расчёт смещения
+                Vector3d reflect_axis;
+
+                reflect_axis.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                reflect_axis.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                reflect_axis.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+
+                reflect_axis.normalize();
+
+                //расчёт фантомной цели
+                randomTargetShiftVec.x() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                randomTargetShiftVec.y() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+                randomTargetShiftVec.z() = (float)(qrand()%10000) / 10000.0 * 2.0 - 1.0;
+
+                randomTargetShiftVec.normalize();
+                randomTargetShiftVec *= randomTargetShift;
+
+                randomTargetShiftVec = reflect(randomTargetShiftVec, reflect_axis);
+
+                KChain.effectors[0].target += randomTargetShiftVec;
+            }
+
         }
         else
         {
+            //случайный добавочный сдвиг цели при столкновении
+            if(target_shift_mode)
+            {
+                if(randomTargetShiftCounter > 0)
+                {
+                    randomTargetShiftCounter -= 1;
+
+                    if( randomTargetShiftCounter == 0)
+                    {
+                        randomTargetShift = 0.0;
+
+                        //отмена доп смещения
+                        KChain.effectors[0].target -= randomTargetShiftVec;
+                        randomTargetShiftVec = Vector3d(0,0,0);
+                    }
+                }
+            }
+
             if(KChain.collision)
             {
                 KChain.collision = false;
@@ -1196,7 +1228,7 @@ void GLWidget::paintGL()
         }
     }
 
-    //shadows
+    // shadows
 
     if(shadows)render_to_shadow_cubemap();
 
@@ -1204,6 +1236,7 @@ void GLWidget::paintGL()
     program->setUniformValue("proj_matrix", p);
     program->setUniformValue("view_matrix", v);
 
+    // ssao
     if(ssao)
     {
         glViewport(0 ,0, w/2, h/2);
@@ -1266,7 +1299,7 @@ void GLWidget::paintGL()
         sph1->draw();
     }
 
-    //ламочка
+    // ламочка
     QVector4D cur_material = sph1->material;
     program->setUniformValue("ambient", QVector4D(1.33,1.33,1.33,1));
     //program->setUniformValue("shadows",0);
@@ -1274,13 +1307,13 @@ void GLWidget::paintGL()
     sph1->model.setToIdentity();
     sph1->model.translate(light_pos.toVector3D());
     sph1->draw();
-    program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1));
+    program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1)); // обычный амбиент
     //program->setUniformValue("shadows",1);
     sph1->set_material(cur_material);
     // лампочка -----------------
 
 
-   // scene->build_octree(100.0, true);
+   // scene->build_octree(100.0, true); //debug
 
     program->setUniformValue("max_bias",(GLfloat)0.075);
     scene->draw_objects();
@@ -1299,7 +1332,7 @@ void GLWidget::paintGL()
     else
         scene->draw_edges(QVector4D(0.0,0.0,0.0,0.0));
 
-    program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1));
+    program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1)); // обычный амбиент
     scene->Scene_objects.pop_back();
 
     //debug drawning shift target ------------------------------
@@ -1689,6 +1722,11 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
                 target_pos = new_target;
                 target_shifted = false;
+
+                //сброс дополнительного смещения цели
+                randomTargetShiftVec = Vector3d(0.0, 0.0, 0.0);
+                randomTargetShift = 0;
+                randomTargetShiftCounter = 0;
             }
             else if(move_root)
             {

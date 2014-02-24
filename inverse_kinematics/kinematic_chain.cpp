@@ -372,7 +372,7 @@ void kinematic_chain::childs_glob_trans_recalc(int start_link_id,Quaterniond &q,
 {
     int child_num = links[start_link_id]->childs_id.size();
 
-    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,1.0 /*velocity*/)) return;
+    if(links[start_link_id]->type == 1 && links[start_link_id]->rotation_possibility(q,0.01 /*velocity*/)) return; // 0.01 - минимальное возможное velocity (на данный момент)
 
 
     //for error compensation
@@ -747,7 +747,7 @@ void kinematic_chain::rotation_step_calculate(double velocity)
                 // Обновление Угла ---------------------------------------
                 if (!(rot_max_Force && joints_to_move[i]->id != max_Force_id)) childs_glob_trans_recalc(bone->id, rot_quat, velocity);
 
-                   //bone->global_transform=rot_quat*bone->global_transform; //
+                    //bone->global_transform=rot_quat*bone->global_transform; //
                    //bone->refresh_bone_axis();//обновление осей кости
                    //bone->global_transform=bone->global_transform*rot_quat;
                   /* if(bone->id==2)
@@ -1079,7 +1079,7 @@ void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affe
             links[i]->repuls_counter = 0;
         }
 
-        links[affected_link]->repuls_counter = (int)(2.0 * precision);
+        links[affected_link]->repuls_counter = (int)(2.0 * precision); // 2 - option
 
 
         if(links[affected_link]->repuls_counter < 10)

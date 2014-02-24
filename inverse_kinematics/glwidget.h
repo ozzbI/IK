@@ -55,6 +55,10 @@ public:
     int selected_object_id;
     bool geometry_repulsion, target_shift_mode, target_shifted; // надобы перенести в scene + соответсвующую логику
 
+    double randomTargetShift;
+    int randomTargetShiftCounter;
+    Vector3d randomTargetShiftVec;
+
     int movement_precision;
 
     QVector3D inetrs_point;
