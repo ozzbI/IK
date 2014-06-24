@@ -1,4 +1,4 @@
-﻿ #ifndef KINEMATIC_CHAIN_H
+﻿#ifndef KINEMATIC_CHAIN_H
 #define KINEMATIC_CHAIN_H
 
 #include <kchain_link.h>
@@ -32,6 +32,8 @@ private:
 
     bool TARGET_ACTIVATED;
     bool ELASTIC_GLOBAL;
+
+    float repulsion_force_k;
 
 public:
 
@@ -108,6 +110,9 @@ public:
 
     void set_joint_elastic(int id,bool state,double K,double K2,double angle);
     void set_slider_elastic(int id,bool state,double K,double K2,double L);
+
+    void incr_repulsion_force_k();
+    void decr_repulsion_force_k();
 
     void calculate_repulsion_Force(QVector3D &inetrs_point, int affected_link, float precision);
 

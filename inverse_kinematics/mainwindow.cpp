@@ -275,6 +275,17 @@ void MainWindow::on_stop_but_clicked()
     glw->stop_proc=!glw->stop_proc;
     if(glw->stop_proc)ui->stop_but->setText("START");
     else ui->stop_but->setText("STOP");
+
+    //vbo test
+    /*
+    glw->testBuf.create();
+    glw->testBuf.setUsagePattern(QGLBuffer::StaticDraw);
+    glw->testBuf.bind();
+    glw->testBuf.allocate(100000000);
+
+    bool ok = glw->testBuf.isCreated();
+    ok = 1;
+    */
 }
 
 void MainWindow::on_vel_slider_valueChanged(int value)
@@ -302,6 +313,8 @@ void MainWindow::on_add_link_but_clicked()
     jc->show();
 
     //glw->KChain.add_link_to_middle(1,Vector3d(0,0,1),2,ui->link->value(),0,0,0);
+    //glw->testBuf.bind();
+    //glw->testBuf.destroy();
 }
 
 void MainWindow::on_red_link_but_clicked()
@@ -685,12 +698,12 @@ void  MainWindow::createActions()
 {
     ssaoAct = new QAction("ssao", this);
     ssaoAct->setCheckable(true);
-    ssaoAct->toggle();
+    //ssaoAct->toggle();
     connect(ssaoAct,SIGNAL(toggled(bool)),this,SLOT(on_ssao_changed(bool)));
 
     shadowsAct = new QAction("тени", this);
     shadowsAct->setCheckable(true);
-    shadowsAct->toggle();
+    //shadowsAct->toggle();
     connect(shadowsAct,SIGNAL(toggled(bool)),this,SLOT(on_shadows_changed(bool)));
 
     edgesAct = new QAction("рисовать грани объектов", this);
@@ -779,7 +792,7 @@ void  MainWindow::createMenus()
     mnObstaclesAvoiding->addAction(geometryRepulsion);
     mnObstaclesAvoiding->addAction(targetShift);
 
-    mnPathFinding = mnObstaclesAvoiding->addMenu(tr("Поиск Пути"));
+    //mnPathFinding = mnObstaclesAvoiding->addMenu(tr("Поиск Пути"));
 
     mnChainOptions->addAction(forceNormAct);
     mnChainOptions->addAction(moveMaxForce);

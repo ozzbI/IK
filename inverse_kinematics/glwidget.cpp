@@ -42,7 +42,7 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     timer = new QTimer(this);
     timer->setTimerType(Qt::PreciseTimer);
     connect(timer, SIGNAL(timeout()), this, SLOT(update_screen()));
-    timer->start(20);
+    timer->start(10);
 
     cam.setPosition(Vector3d(0,0,10));
 
@@ -58,6 +58,11 @@ GLWidget::GLWidget(QWidget *parent, QGLWidget *shareWidget)
     sph1=new sphere();
     sph1->make_sphere(0,0,0,0.3,50);
     sph1->model.translate(5,0,5);
+
+    sph2=new sphere();
+    sph2->make_sphere(0,0,0,0.25,40);
+    sph2->model.translate(5,0,5);
+
     target_for_effector=Vector3d(7,7,7);
     target_pos = QVector3D(7,7,7);
 
@@ -660,7 +665,7 @@ void GLWidget::initializeGL()
     combine_textures_program->bind();
     combine_textures_program->setUniformValue("aoMap", 0);
     combine_textures_program->setUniformValue("srcMap", 1);
-    combine_textures_program->setUniformValue("ssao", 1);
+    combine_textures_program->setUniformValue("ssao", 0);
     combine_textures_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
 
     // combine_textures_program shader program end  -------------------------
@@ -839,7 +844,7 @@ void GLWidget::initializeGL()
     program->setUniformValue("light_pos",light_pos);
     program->setUniformValue("light_intensity", QVector4D(1.0,1.0,1.0,1));
     program->setUniformValue("without_texture",1);
-    program->setUniformValue("shadows",1);
+    program->setUniformValue("shadows",0);
     program->setUniformValue("max_bias", (GLfloat)0.1);
 
 
@@ -868,6 +873,10 @@ void GLWidget::initializeGL()
     c1->set_material(QVector4D(0.4,0.2,1,1));
     sph1->setshaderprog(program);
     sph1->set_material(QVector4D(0.4,1,0.5,1));
+
+    sph2->setshaderprog(program);
+    sph2->set_material(QVector4D(0.4,0.4,1.0,1));
+
     pr1->setshaderprog(program);
     pr1->set_material(QVector4D(0.4,0.7,1,1));
 
@@ -880,7 +889,7 @@ void GLWidget::initializeGL()
 
     scene->update_IK_Chain_objects(&KChain); // need to be first
 
-
+    /*
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
     scene->Scene_objects[KChain.links.size() + 0].set_model_matrix(QVector3D(1.1,3.1,1.1), QVector3D(3.0,10.0,1.0));
 
@@ -953,7 +962,7 @@ void GLWidget::initializeGL()
 
     scene->add_object(b2->vertices, b2->normals, b2->texCoords, program, QVector4D(0.4,0.7,1,1));
     scene->Scene_objects[KChain.links.size() + 23].set_model_matrix(QVector3D(11.0,-6.0,-3.0), QVector3D(3.0,10.0,1.0));
-
+*/
 
     scene->build_object_vertices_cash();
 
@@ -982,8 +991,8 @@ void GLWidget::initializeGL()
     glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    ssao = true;
-    shadows = true;
+    ssao = false;
+    shadows = false;
     draw_edges = false;
     move_rotate_object = false;
     redact_scene_mode = false;
@@ -1093,13 +1102,19 @@ void GLWidget::paintGL()
                                 if(scene->is_target_visible(random_target))
                                 {
                                     //установка фантомной цели (настоящая цель в target_pos)
-                                    random_target_founded = true;
 
-                                    KChain.effectors[0].target.x() = random_target.x();
-                                    KChain.effectors[0].target.y() = random_target.y();
-                                    KChain.effectors[0].target.z() = random_target.z();
+                                    random_target = target_pos + shift_vec * ( shift_radius + 3.0 );
+                                    if( scene->is_target_visible(random_target) )
+                                    {
+                                        KChain.effectors[0].target.x() = random_target.x();
+                                        KChain.effectors[0].target.y() = random_target.y();
+                                        KChain.effectors[0].target.z() = random_target.z();
 
-                                    break;
+                                        random_target_founded = true;
+
+                                        break;
+                                    }
+
                                 }
                             }
 
@@ -1118,8 +1133,13 @@ void GLWidget::paintGL()
                 }
                 else
                 {
-                    if(i == scene->Scene_objects.size() - 2) //не было ни одного пересечения
+                    //if(i == scene->Scene_objects.size() - 2) //не было ни одного пересечения
+                      //  target_shifted = false;
+                    if(KChain.distance_to_target() < 1.0) // 0.2 - option
+                    {
                         target_shifted = false;
+                    }
+
                 }
 
                 if (random_target_founded)
@@ -1167,6 +1187,8 @@ void GLWidget::paintGL()
             if(geometry_repulsion)
             {
                 KChain.calculate_repulsion_Force(inetrs_point, affected_link, (float)movement_precision/(float)move_vel);
+
+                KChain.incr_repulsion_force_k();
             }
 
             //случайный добавочный сдвиг цели при столкновении
@@ -1203,6 +1225,11 @@ void GLWidget::paintGL()
         }
         else
         {
+            if(geometry_repulsion)
+            {
+                KChain.decr_repulsion_force_k();
+            }
+
             //случайный добавочный сдвиг цели при столкновении
             if(target_shift_mode)
             {
@@ -1294,10 +1321,14 @@ void GLWidget::paintGL()
     //рисуются цели
     for(unsigned int i = 0; i < KChain.effectors.size(); i++)
     {
-        sph1->model.setToIdentity();
-        sph1->model.translate(KChain.effectors[i].target.x(),KChain.effectors[i].target.y(),KChain.effectors[i].target.z());
-        sph1->draw();
+        sph2->model.setToIdentity();
+        sph2->model.translate(KChain.effectors[i].target.x(),KChain.effectors[i].target.y(),KChain.effectors[i].target.z());
+        sph2->draw();
     }
+
+    sph1->model.setToIdentity();
+    sph1->model.translate( target_pos.x(), target_pos.y(), target_pos.z());
+    sph1->draw();
 
     // ламочка
     QVector4D cur_material = sph1->material;
@@ -1323,6 +1354,7 @@ void GLWidget::paintGL()
 
     //debug drawning shift target
 
+    /*
     ray_figure.setshaderprog(line_program);
     scene->Scene_objects.push_back(ray_figure);
     program->setUniformValue("ambient", QVector4D(0.0,0.0,0.0,1));
@@ -1335,6 +1367,7 @@ void GLWidget::paintGL()
     program->setUniformValue("ambient", QVector4D(0.33,0.33,0.33,1)); // обычный амбиент
     scene->Scene_objects.pop_back();
 
+    */
     //debug drawning shift target ------------------------------
 
     if(draw_edges)
@@ -1622,8 +1655,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
             Qpos = QVector3D(cam.getPosition().x(),cam.getPosition().y(),cam.getPosition().z());
 
-            C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
-
+            //C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+            C = QVector3D(target_pos.x(),target_pos.y(),target_pos.z());
 
             C_root = QVector3D(KChain.links[0]->global_position.x(),KChain.links[0]->global_position.y(),KChain.links[0]->global_position.z());
 
@@ -1693,7 +1726,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
             if(move_target)
             {
-                C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+                //C = QVector3D(KChain.effectors[0].target.x(),KChain.effectors[0].target.y(),KChain.effectors[0].target.z());
+                C = QVector3D(target_pos.x(),target_pos.y(),target_pos.z());
             }
             else if(move_root)
             {
@@ -1716,6 +1750,12 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
             if(move_target)
             {
+                /*
+                KChain.effectors[0].target.x() = new_target.x();
+                KChain.effectors[0].target.y() = new_target.y();
+                KChain.effectors[0].target.z() = new_target.z();
+                */
+
                 KChain.effectors[0].target.x() = new_target.x();
                 KChain.effectors[0].target.y() = new_target.y();
                 KChain.effectors[0].target.z() = new_target.z();

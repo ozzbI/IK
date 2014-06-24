@@ -79,6 +79,8 @@ public:
     bool test_trigger;
     int test_counter;
     QVector3D a,b;
+
+    QGLBuffer testBuf;
 //-------------------
 
 
@@ -175,6 +177,7 @@ private:
     cylinder* c1;
     prism* pr1;
     sphere* sph1;
+    sphere* sph2;
 
     box* collision_box;
 

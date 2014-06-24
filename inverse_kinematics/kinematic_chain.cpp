@@ -1,14 +1,16 @@
 ﻿#include "kinematic_chain.h"
 #include "utils.h"
 
+#define MAX_REPULSION_FORCE_K   100
+
 kinematic_chain::kinematic_chain()
 {
     cyl.make_cylinder(1,1,20);
     sph.make_sphere(0,0,0,1,20);
     cyl.add_model.rotate(90,0,0,1);
-    cyl_ra.make_cylinder(1,1,20);;
+    cyl_ra.make_cylinder(1,1,20);
     cyl_ra.add_model.rotate(90,1,0,0);
-    cyl_t2.make_cylinder(1,1,20);;
+    cyl_t2.make_cylinder(1,1,20);
     //cyl_t2.add_model.rotate(90,1,0,0);
 
     link_box.set_material(QVector4D(1,1,1,1.0));
@@ -26,6 +28,8 @@ kinematic_chain::kinematic_chain()
     ELASTIC_GLOBAL = 1;
 
     collision = false;
+
+    repulsion_force_k = 0;
 }
 
 void kinematic_chain::draw_chain()
@@ -1057,6 +1061,22 @@ void kinematic_chain::set_slider_elastic(int id,bool state,double K,double K2,do
     links[id]->slider_elastic_L = L;
 }
 
+void kinematic_chain::incr_repulsion_force_k()
+{
+    repulsion_force_k += 2;
+
+    if( repulsion_force_k > MAX_REPULSION_FORCE_K)
+        repulsion_force_k = MAX_REPULSION_FORCE_K;
+}
+
+void kinematic_chain::decr_repulsion_force_k()
+{
+    repulsion_force_k -= 1;
+
+    if( repulsion_force_k < 0)
+        repulsion_force_k = 0;
+}
+
 void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affected_link, float precision)
 {
 
@@ -1072,7 +1092,7 @@ void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affe
     }
     */
 
-    if(true)//только одно отталкивание
+    if(true)//отталкивание только одного звена одновременно
     {
         for(int i = 0; i < links.size(); i++)
         {
@@ -1097,10 +1117,11 @@ void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affe
         Vector3d repulsive_Force_proj = projection(links[affected_link]->dir.normalized(), repulsive_Force);
         repulsive_Force = repulsive_Force_proj - repulsive_Force;
 
-        links[affected_link]->repulsive_Force = (repulsive_Force.normalized() - links[affected_link]->dir.normalized()*0.3) * 0.25;
+        links[affected_link]->repulsive_Force =  ( 1.0 - repulsion_force_k/MAX_REPULSION_FORCE_K ) *
+                ( (repulsive_Force.normalized() - links[affected_link]->dir.normalized()*0.3) * 0.25 );
 
         //debug drawning
-
+        /*
         QMatrix4x4 ident;
 
         line_program->bind();
@@ -1126,6 +1147,7 @@ void kinematic_chain::calculate_repulsion_Force(QVector3D &inetrs_point,int affe
         (0, v.constData());
 
         glDrawArrays(GL_LINES, 0, 2);
+        */
+        //debug drawning end
     }
-
 }
